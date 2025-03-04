@@ -15,7 +15,6 @@ for j in range(4):
 
 # encoding
 codded = []
-print("start coding")
 for r_i, r in enumerate(J):
     min_rms = 10000
     fit_d_i = 0
@@ -33,8 +32,6 @@ for r_i, r in enumerate(J):
 
     codded.append((fit_d_i, fit_alpha, fit_beta))
 
-print(codded)
-
 #decoding
 decoded = J
 to_decode_from = I
@@ -47,11 +44,12 @@ for _ in range(20):
     to_decode_from = [temp[0:int(n_samples/2)], temp[int(n_samples/2):]]
 
 result = np.array(decoded).flatten()
+plt.figure()
 plt.grid()
-plt.plot(t, result)
-plt.plot(t, X)
+plt.title("Attractor vs Original function")
+plt.plot(t, result, label="Attractor")
+plt.plot(t, X, label="Original function")
+plt.legend()
 plt.show()
 
-
-
-
+print(f"RMS = {mymath.d_rms(result, X)}")
