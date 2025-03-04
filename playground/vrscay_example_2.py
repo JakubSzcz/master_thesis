@@ -6,7 +6,6 @@ n_samples = 10000
 
 t = np.linspace(0, 1, n_samples)
 X = np.sin(t*np.pi)
-w_c = 0.5
 
 I = [X[0:int(n_samples/2)], X[int(n_samples/2):]]
 J = []
@@ -33,11 +32,14 @@ for r_i, r in enumerate(J):
     codded.append((fit_d_i, fit_alpha, fit_beta))
 
 #decoding
-decoded = J
-to_decode_from = I
-# alpha, beta
-w = [(0.5, 0), (0.5, 0.25), (0.5, 0.25), (0.5, 0.5)]
-for _ in range(20):
+random_vector = np.random.uniform(0, 1, n_samples)
+to_decode_from = [random_vector[0:int(n_samples/2)], random_vector[int(n_samples/2):]]
+decoded = []
+for j in range(4):
+    decoded.append(random_vector[j*int(n_samples/4):(j+1)*int(n_samples/4)])
+
+
+for _ in range(10):
     for ind, phi in enumerate(codded):
         decoded[ind] = mymath.transform(phi[1], phi[2], mymath.downsample(to_decode_from[phi[0]]))
     temp = np.array(decoded).flatten().tolist()
