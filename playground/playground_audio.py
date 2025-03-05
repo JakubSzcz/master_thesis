@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import random
+import IFS.IFS_1d as ifs
 import util.math as mymath
 from util.wavFile import read_wav_file
 import sounddevice as sd
@@ -15,9 +15,6 @@ decoding_iterations = 1 # iterations number while decoding
 wave_offset = 100000
 d_threshold = 0.01
 
-if n_samples % block_size != 0:
-    raise ValueError("n_samples must be a multiple of block_size")
-
 # generating base image
 t = np.linspace(0, 1, n_samples)
 audio_meta_data, X = read_wav_file("../resources/example.wav")
@@ -28,23 +25,8 @@ X = X[0][wave_offset:n_samples+wave_offset]
 
 print("start generating range and domain blocks...")
 # range blocks, covering all the signal, no overlapping allowed
-R = [X[i:i + block_size] for i in range(0, n_samples, block_size)]
 # domain blocks, overlapping allowed
-D = []
-D_indexes = []
-for _ in range(n_domains):
-    rescue_counter = 10
-    while True:
-        ind = random.randint(0, n_samples - (block_size * 2))
-        if ind in D_indexes:
-            if rescue_counter > 0:
-                D.append(X[ind:ind + block_size * 2])
-            rescue_counter -= 1
-            continue
-        else:
-            D_indexes.append(ind)
-            D.append(X[ind:ind + block_size * 2])
-            break
+R, D, _ = ifs.generate_range_domain_blocks(block_size, n_domains, X)
 print("end generating range and domain blocks.")
 
 # CODING
