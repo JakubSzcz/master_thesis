@@ -17,20 +17,19 @@ original = np.sin(t * 2 * np.pi)
 #original = chirp(t, f0=1, f1=30, t1=n_samples, method='linear')
 random_vector = np.random.uniform(0, 1, n_samples)
 
-R, D, D_ind = ifs.generate_range_domain_blocks(block_size, n_domains, original)
+R, D, D_start_sample = ifs.generate_range_domain_blocks(block_size, n_domains, original)
 
 # d_i, alpha, beta,
 print("start encoding")
-codded = ifs.encode(R, D)
+codded = ifs.encode(R, D, D_start_sample)
 print("end encoding")
-print(codded)
 
 # decoding
 decoded = [random_vector[i:i + block_size] for i in range(0, n_samples, block_size)]
 for _ in range(decoding_iterations):
     temp = np.array(decoded).flatten().tolist()
     for ind, w in enumerate(codded):
-        decoded[ind] = mymath.transform(w[1], w[2], mymath.downsample(temp[D_ind[w[0]]:D_ind[w[0]] + (block_size * 2)]))
+        decoded[ind] = mymath.transform(w[1], w[2], mymath.downsample(temp[w[0]:w[0] + (block_size * 2)]))
 
 result = np.array(decoded).flatten()
 plt.figure()

@@ -26,7 +26,7 @@ X = X[0][wave_offset:n_samples+wave_offset]
 print("start generating range and domain blocks...")
 # range blocks, covering all the signal, no overlapping allowed
 # domain blocks, overlapping allowed
-R, D, _ = ifs.generate_range_domain_blocks(block_size, n_domains, X)
+R, D, D_start_sample = ifs.generate_range_domain_blocks(block_size, n_domains, X)
 print("end generating range and domain blocks.")
 
 # CODING
