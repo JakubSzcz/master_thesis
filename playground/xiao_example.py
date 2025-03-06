@@ -1,9 +1,9 @@
 import util.math as mymath
 
 R = [32, 38]
-D = [ [32,38,55,72], [40,48,50,58]]
+D = [[32, 38, 55, 72], [40, 48, 50, 58]]
 
-D_down = [[(d[i] + d[i+1])/2 for i in range(0, len(d), 2)] for d in D]
+D_down = [[(d[i] + d[i + 1]) / 2 for i in range(0, len(d), 2)] for d in D]
 print(f"Down sampled D = {D_down}")
 
 min_rms = 1000000

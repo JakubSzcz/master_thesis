@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pywt
 
-meta, data = read_wav_file("resources/example.wav")
+meta, data = read_wav_file("resources/sound.wav")
 data = data[0]
 time_seq = np.arange(0, meta["time_duration"], 1/float(meta["fs"]))
 

@@ -11,12 +11,14 @@ wave_offset = 100000
 
 # generating base image
 t = np.linspace(0, 1, n_samples)
-audio_meta_data, X = read_wav_file("../resources/example.wav")
+#file = "../resources/sound.wav"
+file = "../resources/en_speech.wav"
+audio_meta_data, X = read_wav_file(file)
 audio_samplerate = audio_meta_data["fs"]
 X = X[0][wave_offset:n_samples + wave_offset]
 
 ifs = IFS()
-ifs.setup_values(10,10,0.0001)
+ifs.setup_values(10, 10, 0.0001)
 
 # PARTITIONING
 # range blocks, covering all the signal, no overlapping allowed
