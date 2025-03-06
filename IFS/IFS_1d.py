@@ -1,12 +1,10 @@
 import random
 import util.math as mymath
+import numpy as np
 
 # parameters
-# N_SAMPLES = 50000  # samples in base signal
-# BLOCK_SIZE = 10  # size of range block (domain block = *2)
-# N_DOMAINS = 1000  # number of Domains blocks
-# N_RANGE = int(N_SAMPLES / BLOCK_SIZE)  # number of range block
-DEC_ITERATIONS = 1  # iterations number while decoding
+BLOCK_SIZE = 10  # size of range block (domain block = *2)
+DEC_ITERATIONS = 10  # iterations number while decoding
 ENC_ITERATIONS = 1  # iterations number while encoding
 D_THRESHOLD = 0.0001
 
@@ -114,3 +112,28 @@ def encode(ranges: list, domains: list, domains_starting_sample: list) -> list:
 
     print(f"Number of unique d used in the encoding process: {len(d_unique)}/{n_domains}")
     return codded
+
+def decode(encoded_parameters: list) -> list:
+
+    """
+    Decodes from random noise using IFS based on the parameters from the encoding process
+     until close to original signal attractor is generated
+    :param encoded_parameters: list of tuples of encoded parameters for each range block: (domain_starting_sample, alpha, beta)
+    :return: attractor as a reconstructed signal close to the original signal
+    """
+    # parameters
+    n_range = len(encoded_parameters)
+    n_samples = n_range * BLOCK_SIZE
+    random_vector = np.random.uniform(0, 1, n_samples)
+
+    # prepare base random vector for reconstruction
+    decoded = [random_vector[i:i + BLOCK_SIZE] for i in range(0, n_samples, BLOCK_SIZE)]
+    # iteratively perform transformation for each range blocks
+    # TODO iterations should be done as long as: to many iterations performed or
+    #  d_rms between 2 consecutive transformation < D_THRESHOLD
+    for _ in range(DEC_ITERATIONS):
+        temp = np.array(decoded).flatten().tolist()
+        for ind, w in enumerate(encoded_parameters):
+            decoded[ind] = mymath.transform(w[1], w[2], mymath.downsample(temp[w[0]:w[0] + (BLOCK_SIZE * 2)]))
+
+    return np.array(decoded).flatten().tolist()
