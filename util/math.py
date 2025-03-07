@@ -46,3 +46,11 @@ def transform(alpha, beta, x):
 
 def downsample(v):
     return np.array(v).reshape(-1, 2).mean(axis=1)
+
+
+def calculate_mse(x, y):
+    return np.mean((x - y) ** 2)
+
+
+def calculate_rms(x, y):
+    return np.sqrt(calculate_mse(x, y))
