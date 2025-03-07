@@ -17,7 +17,7 @@ def print_attr_vs_orig(attractor: list, original: list, n_range: int = None, n_d
     plt.legend()
     plt.show()
 
-    print(f"RMS = {mymath.d_rms(attractor, original)}")
+    print(f"RMS = {mymath.distance(attractor, original)}")
 
 
 def print_signal(signal: list, title: str):

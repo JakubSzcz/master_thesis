@@ -12,7 +12,7 @@ for d in D_down:
     print(f"For d = {d}")
     alpha, beta = mymath.calculate_alpha_beta(d, R)
     r_recon = mymath.transform(alpha, beta, d)
-    rms = mymath.d_rms(r_recon, R)
+    rms = mymath.distance(r_recon, R)
     print(f"alpha = {alpha}, beta = {beta}, rms = {rms}")
     if rms < min_rms:
         min_rms = rms

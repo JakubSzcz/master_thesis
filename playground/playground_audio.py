@@ -11,11 +11,14 @@ wave_offset = 100000
 
 # generating base image
 t = np.linspace(0, 1, n_samples)
-#file = "../resources/sound.wav"
-file = "../resources/en_speech.wav"
+file = "../resources/sound.wav"
+# file = "../resources/en_speech.wav"
 audio_meta_data, X = read_wav_file(file)
 audio_samplerate = audio_meta_data["fs"]
 X = X[0][wave_offset:n_samples + wave_offset]
+
+print(f"Audio parameters: fs = {audio_samplerate}, samples = {n_samples}, "
+      f"duration = {round((1 / audio_samplerate) * n_samples, 2)}s.")
 
 ifs = IFS()
 ifs.setup_values(10, 10, 0.0001)

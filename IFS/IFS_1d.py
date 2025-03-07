@@ -94,7 +94,7 @@ class IFS:
                 print(f"\rProgress: {round(r_i * 100 / n_range, 2)}%.", end="", flush=True)
 
             # parameters to encode
-            d_rms_min = 1000000
+            distance_min = 1000000
             d_starting_sample = 0
             fit_alpha = 1
             fit_beta = 0
@@ -104,17 +104,17 @@ class IFS:
                 d_down = mymath.downsample(d)
                 alpha, beta = mymath.calculate_alpha_beta(d_down, r)
                 transformed = mymath.transform(alpha, beta, d_down)
-                d_rms_cal = mymath.d_rms(d_down, transformed)
+                distance_calc = mymath.distance(d_down, transformed)
 
-                if d_rms_cal < d_rms_min:
+                if distance_calc < distance_min:
                     d_starting_sample = domains_starting_sample[d_i]
                     d_unique.add(d_i)
                     fit_alpha = alpha
                     fit_beta = beta
-                    d_rms_min = d_rms_cal
+                    distance_min = distance_calc
 
                 # already found d_rms satisfies threshold, stop searching
-                if d_rms_min < self.D_THRESHOLD:
+                if distance_min < self.D_THRESHOLD:
                     break
 
             # encoded parameters for each range block

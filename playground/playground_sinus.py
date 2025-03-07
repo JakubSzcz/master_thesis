@@ -4,7 +4,7 @@ import util.common as common
 
 # parameters
 n_samples = 1000  # samples in base signal
-n_domains = 200  # number of domains blocks
+n_domains = 20  # number of domains blocks
 
 # signals
 t = np.linspace(0, 1, n_samples)
@@ -19,4 +19,4 @@ codded = ifs.encode(R, D, D_start_sample)
 
 decoded = ifs.decode(codded)
 
-common.print_attr_vs_orig(original, decoded)
+common.print_attr_vs_orig(decoded, original, n_domains=n_domains, n_range=10)

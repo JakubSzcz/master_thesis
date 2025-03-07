@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def d_rms(x, y):
+def distance(x, y):
     return np.linalg.norm(x - y)
 
 

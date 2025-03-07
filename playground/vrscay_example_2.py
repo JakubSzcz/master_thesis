@@ -22,7 +22,7 @@ for r_i, r in enumerate(J):
     for d_i, d in enumerate(I):
         d_down = mymath.downsample(d)
         alpha, beta = mymath.calculate_alpha_beta(d_down, r)
-        d_rms_cal = mymath.d_rms(d_down, mymath.transform(alpha, beta, d_down))
+        d_rms_cal = mymath.distance(d_down, mymath.transform(alpha, beta, d_down))
         if d_rms_cal < min_rms:
             fit_d_i = d_i
             fit_alpha = alpha
@@ -54,4 +54,4 @@ plt.plot(t, X, label="Original function")
 plt.legend()
 plt.show()
 
-print(f"RMS = {mymath.d_rms(result, X)}")
+print(f"RMS = {mymath.distance(result, X)}")
