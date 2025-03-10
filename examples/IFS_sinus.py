@@ -5,8 +5,9 @@ import util.common as common
 # parameters
 n_samples = 1000  # samples in base signal
 n_domains = 4  # number of domains blocks
+n_range = 10 # for printing only
 
-# signals
+# sinus generation
 t = np.linspace(0, 1, n_samples)
 original = np.sin(t * 2 * np.pi)
 random_vector = np.random.uniform(0, 1, n_samples)
@@ -19,4 +20,4 @@ codded = ifs.encode(R, D, D_start_sample)
 
 decoded = ifs.decode(codded)
 
-common.print_attr_vs_orig(decoded, original, n_domains=n_domains, n_range=10)
+common.print_attr_vs_orig(decoded, original, n_domains=n_domains, n_range=n_range)

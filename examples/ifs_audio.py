@@ -10,12 +10,13 @@ n_domains = 1000 # number of Domain blocks
 n_range = 10 # number of Range blocks
 wave_offset = 100000
 
-# generating base image
-t = np.linspace(0, 1, n_samples)
-file = "../resources/sound.wav"
-#file = "../resources/en_speech.wav"
+# reading audio files
+sound = "../resources/sound.wav"
+speech = "../resources/en_speech.wav"
+file = sound
 audio_meta_data, X = read_wav_file(file)
 audio_samplerate = audio_meta_data["fs"]
+# reads only one channel with offset
 X = X[0][wave_offset:n_samples + wave_offset]
 
 print(f"Audio parameters: fs = {audio_samplerate}, samples = {n_samples}, "

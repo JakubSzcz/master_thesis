@@ -18,8 +18,8 @@ def print_attr_vs_orig(attractor: list, original: list, n_range: int = None, n_d
     plt.show()
 
     print(f"Euclidian distance = {mymath.distance(attractor, original)}")
-    print(f"MSE = {mymath.calculate_mse(attractor, original)}")
-    print(f"RMS = {mymath.calculate_rms(attractor, original)}")
+    #print(f"MSE = {mymath.calculate_mse(attractor, original)}")
+    #print(f"RMS = {mymath.calculate_rms(attractor, original)}")
 
 
 def print_signal(signal: list, title: str):

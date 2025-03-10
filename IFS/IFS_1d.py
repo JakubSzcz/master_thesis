@@ -26,7 +26,6 @@ class IFS:
         :param domains_overlaps: tells if domain blocks are overlapping, default is True
         :return: list of range, domain blocks and list of starting sample number of each domain block
         """
-
         start_time = time.time()
         print("starting generating range and domain blocks...")
         # parameters, initialization and validation
@@ -71,7 +70,6 @@ class IFS:
         :param domains_starting_sample: list of starting sample number of each domain block
         :return: list of tuples of encoded parameters for each range block: (domain_starting_sample, alpha, beta)
         """
-
         print("starting encoding...")
         start_time = time.time()
         # parameters and validations
@@ -126,7 +124,6 @@ class IFS:
         return codded
 
     def decode(self, encoded_parameters: list) -> list:
-
         """
         Decodes from random noise using IFS based on the parameters from the encoding process
          until close to original signal attractor is generated
@@ -134,7 +131,6 @@ class IFS:
             (domain_starting_sample, alpha, beta)
         :return: attractor as a reconstructed signal close to the original signal
         """
-
         start_time = time.time()
         print("starting decoding...")
         # parameters
