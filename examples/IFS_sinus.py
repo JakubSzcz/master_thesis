@@ -5,12 +5,11 @@ import util.common as common
 # parameters
 n_samples = 1000  # samples in base signal
 n_domains = 4  # number of domains blocks
-n_range = 10 # for printing only
+n_range = 10  # for printing only
 
 # sinus generation
 t = np.linspace(0, 1, n_samples)
 original = np.sin(t * 2 * np.pi)
-random_vector = np.random.uniform(0, 1, n_samples)
 
 ifs = IFS()
 

@@ -6,8 +6,8 @@ import util.common as common
 
 # parameters
 n_samples = 50000  # samples in base signal
-n_domains = 1000 # number of Domain blocks
-n_range = 10 # number of Range blocks
+n_domains = 1000  # number of Domain blocks
+n_range = 10  # number of Range blocks
 wave_offset = 100000
 
 # reading audio files
