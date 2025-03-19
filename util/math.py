@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.signal as signal
 
 
 def distance(x, y):
@@ -62,3 +63,26 @@ def calculate_mse(x, y):
 
 def calculate_rms(x, y):
     return np.sqrt(calculate_mse(x, y))
+
+
+def find_highest_frequency(signal_data, fs, threshold_ratio=0.1):
+    # Compute FFT
+    fft_values = np.fft.rfft(signal_data)  # Compute FFT (only positive frequencies)
+    freqs = np.fft.rfftfreq(len(signal_data), 1 / fs)  # Frequency bins
+    magnitude = np.abs(fft_values)  # Get magnitude spectrum
+
+    # Set a threshold to ignore low-amplitude noise
+    threshold = max(magnitude) * threshold_ratio
+    valid_freqs = freqs[magnitude > threshold]  # Filter significant frequencies
+
+    # Get the highest existing frequency
+    return max(valid_freqs) if len(valid_freqs) > 0 else 0
+
+
+# Low-pass filter design
+def butter_lowpass_filter(data, cutoff, fs, order=4):
+    nyquist = 0.5 * fs  # Nyquist frequency
+    normal_cutoff = cutoff / nyquist  # Normalize cutoff frequency
+    b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)  # Butterworth filter
+    filtered_signal = signal.filtfilt(b, a, data)  # Apply filter with zero-phase
+    return filtered_signal

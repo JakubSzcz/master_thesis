@@ -3,11 +3,12 @@ from util.wavFile import read_wav_file
 import numpy as np
 import sounddevice as sd
 import util.common as common
+import util.math as mymath
 
 # parameters
 n_samples = 50000  # samples in base signal
 n_domains = 1000  # number of Domain blocks
-n_range = 10  # number of Range blocks
+range_block_size = 10  # number of Range blocks
 wave_offset = 100000
 
 # reading audio files
@@ -23,7 +24,7 @@ print(f"Audio parameters: fs = {audio_samplerate}, samples = {n_samples}, "
       f"duration = {round((1 / audio_samplerate) * n_samples, 2)}s.")
 
 ifs = IFS()
-ifs.setup_values(n_range, 10, 0.0001)
+ifs.setup_values(range_block_size, 10, 0.0001)
 
 # PARTITIONING
 # range blocks, covering all the signal, no overlapping allowed
@@ -36,11 +37,17 @@ codded = ifs.encode(R, D, D_start_sample)
 # DECODING
 decoded = ifs.decode(codded)
 
+# LOW PASS FILTERING
+highest_freq = mymath.find_highest_frequency(X, audio_samplerate)
+filtered = mymath.butter_lowpass_filter(decoded, highest_freq, audio_samplerate)
+
 # PLOTTING
-common.print_attr_vs_orig(decoded, X, n_range=n_range, n_domains=n_domains)
+common.print_attr_vs_orig(decoded, X, n_range=range_block_size, n_domains=n_domains)
 common.print_signal(X, "Original signal")
 common.print_signal(decoded, "Decoded signal")
+common.print_signal(filtered, "Filtered signal")
 
 # PLAYING
 sd.play(np.array(R).flatten(), samplerate=audio_samplerate, blocking=True)
 sd.play(np.array(decoded), samplerate=audio_samplerate, blocking=True)
+sd.play(np.array(filtered), samplerate=audio_samplerate, blocking=True)
