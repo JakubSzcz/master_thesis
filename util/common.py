@@ -2,13 +2,14 @@ import matplotlib.pyplot as plt
 import util.math as mymath
 
 
-def print_attr_vs_orig(attractor: list, original: list, n_range: int = None, n_domains: int = None):
+def print_attr_vs_orig(attractor: list, original: list, n_range: int = None, n_domains: int = None, title: str = None):
     plt.figure()
     plt.grid()
-    if n_range is None or n_domains is None:
-        title = "Attractor vs Original function"
-    else:
-        title = f"Attractor vs Original function; n_d = {n_domains}, n_r = {n_range}."
+    if title is None:
+        if n_range is None or n_domains is None:
+            title = "Attractor vs Original function"
+        else:
+            title = f"Attractor vs Original function; n_d = {n_domains}, n_r = {n_range}."
     plt.title(title)
     plt.plot(attractor, label="Attractor")
     plt.plot(original, label="Original function", linestyle="--")

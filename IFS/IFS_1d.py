@@ -58,7 +58,7 @@ class IFS:
                         starting_sample.append(ind)
                         break
         print(f"generating range and domain blocks finished with "
-              f"{round(time.time() - start_time, self.TIME_ROUNDING)} seconds..")
+              f"{round(time.time() - start_time, self.TIME_ROUNDING)} seconds.")
         return range_blocks, domain_blocks, starting_sample
 
     def encode(self, ranges: list, domains: list, domains_starting_sample: list) -> list:

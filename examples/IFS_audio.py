@@ -7,7 +7,7 @@ import util.math as mymath
 
 # parameters
 n_samples = 50000  # samples in base signal
-n_domains = 1000  # number of Domain blocks
+n_domains = 10  # number of Domain blocks
 range_block_size = 10  # number of Range blocks
 wave_offset = 100000
 
@@ -38,7 +38,7 @@ codded = ifs.encode(R, D, D_start_sample)
 decoded = ifs.decode(codded)
 
 # LOW PASS FILTERING
-highest_freq = mymath.find_highest_frequency(X, audio_samplerate)
+highest_freq = mymath.find_highest_frequency(X, audio_samplerate) + 0.0001
 filtered = mymath.butter_lowpass_filter(decoded, highest_freq, audio_samplerate)
 
 # PLOTTING
@@ -46,6 +46,7 @@ common.print_attr_vs_orig(decoded, X, n_range=range_block_size, n_domains=n_doma
 common.print_signal(X, "Original signal")
 common.print_signal(decoded, "Decoded signal")
 common.print_signal(filtered, "Filtered signal")
+common.print_attr_vs_orig(filtered, X, title="Original vs filtered attractor")
 
 # PLAYING
 sd.play(np.array(R).flatten(), samplerate=audio_samplerate, blocking=True)
