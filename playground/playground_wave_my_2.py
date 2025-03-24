@@ -1,5 +1,7 @@
 import pprint
 
+from matplotlib import pyplot as plt
+
 from util.wavFile import read_wav_file
 import numpy as np
 import sounddevice as sd
@@ -91,13 +93,13 @@ def generate_blocks(signal: np.ndarray, decomposition_level: int, block_height: 
 
 
 # parameters
-n = 10
+n = 14
 n_samples = 2 ** n  # samples in base signal
 wave_offset = 10000
 
 # generating base image
-file = "../resources/sound.wav"
-#file = "../resources/en_speech.wav"
+#file = "../resources/sound.wav"
+file = "../resources/en_speech.wav"
 audio_meta_data, X = read_wav_file(file)
 audio_samplerate = audio_meta_data["fs"]
 X = X[0][wave_offset:n_samples + wave_offset]
@@ -116,10 +118,9 @@ K = DECOMP_LEVEL - RANGE_BLOCK_HEIGHT
 # generating range and domains blocks
 start_time_enc = time.time()
 print("starting encoding...")
-R, D, coff_to_be_stored, all_coeffs = generate_blocks(X, DECOMP_LEVEL, RANGE_BLOCK_HEIGHT,wavelet_family=wavelet ,return_coeffs=True)
-a = all_coeffs[1:]
-for lev in all_coeffs:
-    print(len(lev))
+R, D, coff_to_be_stored, all_coeffs = generate_blocks(X, DECOMP_LEVEL, RANGE_BLOCK_HEIGHT, wavelet_family=wavelet,
+                                                      return_coeffs=True)
+
 # flatten R and D
 R_flatten = []
 D_flatten = []
@@ -130,10 +131,11 @@ for r in R:
 for d in D:
     D_flatten.append(np.hstack(d))
 
-# D_flatten = random.sample(D_flatten, len(D_flatten) // 2)
+#D_flatten = random.sample(D_flatten, len(D_flatten) // 2)
+
+# ENCODING
 n_range = len(R_flatten)
 progress_incrementor = int(0.05 * n_range)
-# ENCODING
 codded = []
 for r_i, r in enumerate(R_flatten):
     # progress logging
@@ -154,6 +156,7 @@ for r_i, r in enumerate(R_flatten):
         if distance_calc < distance_min:
             fit_alpha = alpha
             fit_beta = beta
+            d_index = d_i
             distance_min = distance_calc
 
     # encoded parameters for each range block
@@ -168,7 +171,7 @@ start_time_dec = time.time()
 range_block_size = len(R_flatten[0])
 
 # prepare base random vectors pyramid for reconstruction for level above K
-decoded = coff_to_be_stored
+decoded = coff_to_be_stored.copy()
 # decoded_coeffs_base = [np.random.uniform(0, 1, 2 ** (n - i + 2)) for i in range(DECOMP_LEVEL, K, -1)]
 decoded_coeffs_base = [np.random.uniform(0, 1, 2 ** (n - i)) for i in range(RANGE_BLOCK_HEIGHT, 0, -1)]
 decoded.extend(decoded_coeffs_base)  # CONTAINS b AT 0 INDEX, AT K + 1 INDEX ARE RANGE BLOCKS
@@ -181,6 +184,8 @@ for _ in range(10):
             decoded[K + 1 + k_prim][ind * k_prim_pow: ind * k_prim_pow + k_prim_pow] = (
                 mymath.transform(w[1], w[2], decoded[K + k_prim][w[0] * k_prim_pow: w[0] * k_prim_pow + k_prim_pow]))
 
+
+# TODO try filtering coeffs before
 reconstructed_signal = pywt.waverec(decoded, wavelet)
 print(f"finished decoding with {round(time.time() - start_time_dec, 2)}s.")
 
@@ -188,7 +193,15 @@ print(f"finished decoding with {round(time.time() - start_time_dec, 2)}s.")
 highest_freq = mymath.find_highest_frequency(X, audio_samplerate)
 filtered = mymath.butter_lowpass_filter(reconstructed_signal, highest_freq + 0.0001, audio_samplerate)
 
-# PLOTTING
+#PLOTTING
+for ind, lev in enumerate(decoded):
+    plt.plot(lev)
+    if ind == 0:
+        plt.title(f"{wavelet} wavelet decomposition reconstructed level b_{ind}")
+    else:
+        plt.title(f"{wavelet} wavelet decomposition reconstructed level a_{ind - 1}")
+    plt.show()
+
 common.print_signal(X, "original signal")
 common.print_signal(reconstructed_signal, "reconstructed signal")
 common.print_signal(filtered, "filtered signal")
