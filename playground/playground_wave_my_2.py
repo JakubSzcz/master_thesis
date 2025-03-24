@@ -1,43 +1,46 @@
+import pprint
+
 from util.wavFile import read_wav_file
 import numpy as np
 import sounddevice as sd
 import util.math as mymath
 import util.common as common
 import pywt
+import time
 import random
 
 
 # TODO make a class of it
 
-def create_block_from_pyramid(root_level: int, block_height: int, coeffs, starting_index: int,
+def create_block_from_pyramid(root_level: int, block_height: int, starting_index: int,
                               a: np.ndarray) -> list:
     """
     Create a single pyramid block from a wavelet decomposition.
     :param root_level: wavelet decomposition level where the pyramid starting node is located
     :param block_height: how many decomposed levels constitute the block
-    :param coeffs: pyramid root coefficient TO BE DELETED check todos
     :param starting_index: index of the root coefficient used for generating the block
     :param a: list of all coefficients from decomposition TO BE ACCESSED AS CLASS PARAMETER
     :return: list of range blocks composed of coefficients under chosen root coefficient. e.g. [a_k_j, [a_k+1_j*2, a_k+1_(j*2)+1...]...]
     """
     # TODO make a documentation
     # TODO check if recursive version is faster
-    # TODO coeffs parametr can be ommited insted use a[root_level]
+    # TODO all pyramid in loop
     # pyramid root init
-    pyramid = [coeffs]
+    pyramid = [a[root_level][starting_index]]
     n_elements_in_pyramid_level = 2
     for i in range(root_level + 1, root_level + block_height):
-        pyramid.append(a[i][starting_index: starting_index + n_elements_in_pyramid_level])
         starting_index *= 2
+        pyramid.append(a[i][starting_index: starting_index + n_elements_in_pyramid_level])
         n_elements_in_pyramid_level *= 2
     return pyramid
 
 
 def generate_blocks(signal: np.ndarray, decomposition_level: int, block_height: int,
-                    wavelet_family: str = 'db1') -> (list, list, list):
+                    wavelet_family: str = 'db1', return_coeffs: bool = False) -> (list, list, list):
     """
     Performs wavelet decomposition and then generates range and domain blocks and wavelet decomposition
      coefficients that have been left to be stored
+    :param return_coeffs: flag to return wavelet decomposition coefficients
     :param signal: original signal to be decomposed
     :param decomposition_level: wavelet decomposition level
     :param block_height: how many decomposed levels constitute to the block
@@ -73,40 +76,50 @@ def generate_blocks(signal: np.ndarray, decomposition_level: int, block_height: 
     # TODO a should be access as a class parameter
     # TODO check if can be done in one loop
     for i, a_k in enumerate(a[k]):
-        range_blocks.append(create_block_from_pyramid(k, block_height, a_k, i, a))
+        range_blocks.append(create_block_from_pyramid(k, block_height, i, a))
 
     domain_blocks = []  # domain blocks
     # generate domain blocks
     for i, a_k in enumerate(a[k - 1]):  # root
-        domain_blocks.append(create_block_from_pyramid(k - 1, block_height, a_k, i, a))
+        domain_blocks.append(create_block_from_pyramid(k - 1, block_height, i, a))
 
-    return range_blocks, domain_blocks, [b, a[0:k]]
+    if return_coeffs:
+        return range_blocks, domain_blocks, wave_coeff_pyramid[
+                                            0:k + 1], wave_coeff_pyramid  # [0:k+1] +1 since 0's element is b
+    else:
+        return range_blocks, domain_blocks, wave_coeff_pyramid[0:k + 1]
 
 
 # parameters
-n = 14
+n = 10
 n_samples = 2 ** n  # samples in base signal
 wave_offset = 10000
 
 # generating base image
 file = "../resources/sound.wav"
-# file = "../resources/en_speech.wav"
+#file = "../resources/en_speech.wav"
 audio_meta_data, X = read_wav_file(file)
 audio_samplerate = audio_meta_data["fs"]
 X = X[0][wave_offset:n_samples + wave_offset]
+# print(pywt.wavelist(family=None, kind='discrete'))
+wavelet = 'haar'
 
 print(f"Audio parameters: fs = {audio_samplerate}, samples = {n_samples}, "
       f"duration = {round((1 / audio_samplerate) * n_samples, 2)}s.")
 
 # generating wavelets coefficients pyramid
-DECOMP_LEVEL = 6
+DECOMP_LEVEL = 4
 # create blocks
-RANGE_BLOCK_HEIGHT = 3  # from the pyramid top, without b, on the bottom a_0, on the top a_(DECOMP_LEVEL - 1)
+RANGE_BLOCK_HEIGHT = 2  # from the pyramid top, without b, on the bottom a_0, on the top a_(DECOMP_LEVEL - 1)
 K = DECOMP_LEVEL - RANGE_BLOCK_HEIGHT
 
 # generating range and domains blocks
-R, D, coff_to_be_stored = generate_blocks(X, DECOMP_LEVEL, RANGE_BLOCK_HEIGHT)
-
+start_time_enc = time.time()
+print("starting encoding...")
+R, D, coff_to_be_stored, all_coeffs = generate_blocks(X, DECOMP_LEVEL, RANGE_BLOCK_HEIGHT,wavelet_family=wavelet ,return_coeffs=True)
+a = all_coeffs[1:]
+for lev in all_coeffs:
+    print(len(lev))
 # flatten R and D
 R_flatten = []
 D_flatten = []
@@ -117,11 +130,10 @@ for r in R:
 for d in D:
     D_flatten.append(np.hstack(d))
 
-#D_flatten = random.sample(D_flatten, len(D_flatten)//2)
-
-# ENCODING
+# D_flatten = random.sample(D_flatten, len(D_flatten) // 2)
 n_range = len(R_flatten)
 progress_incrementor = int(0.05 * n_range)
+# ENCODING
 codded = []
 for r_i, r in enumerate(R_flatten):
     # progress logging
@@ -145,71 +157,38 @@ for r_i, r in enumerate(R_flatten):
             distance_min = distance_calc
 
     # encoded parameters for each range block
-    codded.append((d_index, fit_alpha, 0))
+    codded.append((d_index, fit_alpha, fit_beta))
 print("\rProgress: 100%.", flush=True)
+print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s.")
 
 # DECODING
 print("starting decoding...")
+start_time_dec = time.time()
 # parameters
-n_range = len(codded)
 range_block_size = len(R_flatten[0])
-n_samples = n_range * len(R_flatten[0])
-random_vector = np.random.uniform(0, 1, n_samples)
 
-# prepare base random vector for reconstruction
-decoded = [random_vector[i:i + range_block_size] for i in range(0, n_samples, range_block_size)]
+# prepare base random vectors pyramid for reconstruction for level above K
+decoded = coff_to_be_stored
+# decoded_coeffs_base = [np.random.uniform(0, 1, 2 ** (n - i + 2)) for i in range(DECOMP_LEVEL, K, -1)]
+decoded_coeffs_base = [np.random.uniform(0, 1, 2 ** (n - i)) for i in range(RANGE_BLOCK_HEIGHT, 0, -1)]
+decoded.extend(decoded_coeffs_base)  # CONTAINS b AT 0 INDEX, AT K + 1 INDEX ARE RANGE BLOCKS
+
 # iteratively perform transformation for each range blocks
 for _ in range(10):
-    temp = np.array(decoded).flatten().tolist()
     for ind, w in enumerate(codded):
-        decoded[ind] = mymath.transform(w[1], w[2],
-                                        mymath.downsample(temp[w[0]:w[0] + (range_block_size * 2)]))
-print("finished decoding.")
+        for k_prim in range(0, DECOMP_LEVEL - K):
+            k_prim_pow = 2 ** k_prim
+            decoded[K + 1 + k_prim][ind * k_prim_pow: ind * k_prim_pow + k_prim_pow] = (
+                mymath.transform(w[1], w[2], decoded[K + k_prim][w[0] * k_prim_pow: w[0] * k_prim_pow + k_prim_pow]))
 
-mean_distance = np.mean([mymath.distance(decoded[i], r) for i, r in enumerate(R_flatten)])
-print(f"Mean distance between decoded and originl range blocks: {mean_distance}")
-print(f"decoded len == R len: {len(R) == len(decoded)}")
-print(f"decoded len == R_flatten len: {len(R_flatten) == len(decoded)}")
+reconstructed_signal = pywt.waverec(decoded, wavelet)
+print(f"finished decoding with {round(time.time() - start_time_dec, 2)}s.")
 
-# building pyramid
-pyramid_levels_sizes = [2 ** i for i in range(RANGE_BLOCK_HEIGHT)]
-decoded_pyramids = []
-for unordered_pyramid in decoded:
-    temp = []
-    starting_index = 0
-    for level_size in pyramid_levels_sizes:
-        if level_size == 1:
-            temp.append(unordered_pyramid[starting_index:starting_index + level_size][0])
-        else:
-            temp.append(unordered_pyramid[starting_index:starting_index + level_size])
-        starting_index += level_size
-    decoded_pyramids.append(temp)
-
-# FROM DECODE PYRAMIDS TO COEFFICIENTS
-a_decoded = [[] for _ in range(RANGE_BLOCK_HEIGHT)]
-for i, a_dec in enumerate(a_decoded):
-    for pyramid in decoded_pyramids:
-        a_dec.extend(pyramid[i]) if isinstance(pyramid[i], np.ndarray) else a_dec.append(pyramid[i])
-
-a_decoded_nd = []
-# TODO decoding directly as ndarray -> pywt reconstruction works only on that
-for a_d in a_decoded:
-    if isinstance(a_d, np.ndarray):
-        a_decoded_nd.append(a_d)
-    else:
-        a_decoded.append(np.array(a_d))
-
-# MERGE ALL COEFFS
-# separate detail coefficients cD (a) -> high freq and approximation coefficients cA (b) - low freq
-reconstructed_coeffs = [coff_to_be_stored[0]]
-reconstructed_coeffs.extend(coff_to_be_stored[1])
-reconstructed_coeffs.extend(a_decoded_nd)
-
-reconstructed_signal = pywt.waverec(reconstructed_coeffs, 'db1')
 # LOW PASS FILTERING
 highest_freq = mymath.find_highest_frequency(X, audio_samplerate)
 filtered = mymath.butter_lowpass_filter(reconstructed_signal, highest_freq + 0.0001, audio_samplerate)
 
+# PLOTTING
 common.print_signal(X, "original signal")
 common.print_signal(reconstructed_signal, "reconstructed signal")
 common.print_signal(filtered, "filtered signal")
@@ -218,4 +197,4 @@ common.print_attr_vs_orig(reconstructed_signal, X)
 # PLAYING
 sd.play(X, samplerate=audio_samplerate, blocking=True)
 sd.play(np.array(reconstructed_signal), samplerate=audio_samplerate, blocking=True)
-sd.play(np.array(filtered), samplerate=audio_samplerate, blocking=True)
+sd.play(np.array(filtered) * 5, samplerate=audio_samplerate, blocking=True)
