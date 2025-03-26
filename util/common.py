@@ -23,9 +23,12 @@ def print_attr_vs_orig(attractor: list, original: list, n_range: int = None, n_d
     #print(f"RMS = {mymath.calculate_rms(attractor, original)}")
 
 
-def print_signal(signal: list, title: str):
+def print_signal(signal: list, title: str, plot_ranges_size: int = None):
     plt.figure()
     plt.grid()
     plt.title(title)
     plt.plot(signal)
+    if plot_ranges_size is not None:
+        for p in range(0, len(signal), plot_ranges_size):
+            plt.axvline(x=p, color='red', linestyle='--', alpha=0.7)
     plt.show()

@@ -93,13 +93,13 @@ def generate_blocks(signal: np.ndarray, decomposition_level: int, block_height: 
 
 
 # parameters
-n = 14
+n = 6
 n_samples = 2 ** n  # samples in base signal
-wave_offset = 10000
+wave_offset = 100000
 
 # generating base image
-#file = "../resources/sound.wav"
-file = "../resources/en_speech.wav"
+file = "../resources/sound.wav"
+#file = "../resources/en_speech.wav"
 audio_meta_data, X = read_wav_file(file)
 audio_samplerate = audio_meta_data["fs"]
 X = X[0][wave_offset:n_samples + wave_offset]
@@ -112,7 +112,7 @@ print(f"Audio parameters: fs = {audio_samplerate}, samples = {n_samples}, "
 # generating wavelets coefficients pyramid
 DECOMP_LEVEL = 4
 # create blocks
-RANGE_BLOCK_HEIGHT = 2  # from the pyramid top, without b, on the bottom a_0, on the top a_(DECOMP_LEVEL - 1)
+RANGE_BLOCK_HEIGHT = 3  # from the pyramid top, without b, on the bottom a_0, on the top a_(DECOMP_LEVEL - 1)
 K = DECOMP_LEVEL - RANGE_BLOCK_HEIGHT
 
 # generating range and domains blocks
@@ -120,7 +120,7 @@ start_time_enc = time.time()
 print("starting encoding...")
 R, D, coff_to_be_stored, all_coeffs = generate_blocks(X, DECOMP_LEVEL, RANGE_BLOCK_HEIGHT, wavelet_family=wavelet,
                                                       return_coeffs=True)
-
+pprint.pprint(R)
 # flatten R and D
 R_flatten = []
 D_flatten = []
@@ -131,11 +131,12 @@ for r in R:
 for d in D:
     D_flatten.append(np.hstack(d))
 
-#D_flatten = random.sample(D_flatten, len(D_flatten) // 2)
+# D_flatten = random.sample(D_flatten, len(D_flatten) // 2)
 
 # ENCODING
 n_range = len(R_flatten)
-progress_incrementor = int(0.05 * n_range)
+uniq_d = set()
+progress_incrementor = 1 if int(0.05 * n_range) == 0 else int(0.05 * n_range)
 codded = []
 for r_i, r in enumerate(R_flatten):
     # progress logging
@@ -161,8 +162,10 @@ for r_i, r in enumerate(R_flatten):
 
     # encoded parameters for each range block
     codded.append((d_index, fit_alpha, fit_beta))
+    uniq_d.add(d_index)
 print("\rProgress: 100%.", flush=True)
 print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s.")
+print(f"d used: {len(uniq_d)}/{len(all_coeffs[K-1])}")
 
 # DECODING
 print("starting decoding...")
@@ -184,7 +187,6 @@ for _ in range(10):
             decoded[K + 1 + k_prim][ind * k_prim_pow: ind * k_prim_pow + k_prim_pow] = (
                 mymath.transform(w[1], w[2], decoded[K + k_prim][w[0] * k_prim_pow: w[0] * k_prim_pow + k_prim_pow]))
 
-
 # TODO try filtering coeffs before
 reconstructed_signal = pywt.waverec(decoded, wavelet)
 print(f"finished decoding with {round(time.time() - start_time_dec, 2)}s.")
@@ -193,7 +195,7 @@ print(f"finished decoding with {round(time.time() - start_time_dec, 2)}s.")
 highest_freq = mymath.find_highest_frequency(X, audio_samplerate)
 filtered = mymath.butter_lowpass_filter(reconstructed_signal, highest_freq + 0.0001, audio_samplerate)
 
-#PLOTTING
+# PLOTTING
 for ind, lev in enumerate(decoded):
     plt.plot(lev)
     if ind == 0:

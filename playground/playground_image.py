@@ -1,23 +1,31 @@
+import pywt
 import cv2
 import random
 import numpy as np
 
-# Read the image
-img = cv2.imread("../resources/lena_gray.png", cv2.IMREAD_GRAYSCALE)
+from util.wavFile import read_wav_file
 
-n_samples = img.shape[0]  # samples in base signal
-block_size = 16  # size of range block (domain block = *2)
-n_domains = 300  # number of Domains blocks
-n_range = int(n_samples / block_size) ** 2  # number of range block
-decoding_iterations = 10  # iterations number while decoding
+n = 6
+n_samples = 2 ** n  # samples in base signal
+wave_offset = 10000
+#n_samples = 100
 
-R = []
-for i in range(0, n_samples, block_size):
-    for j in range(0, n_samples, block_size):
-        R.append(img[j:j + block_size, i:i + block_size])
+# generating base image
+# file = "../resources/sound.wav"
+file = "../resources/en_speech.wav"
+audio_meta_data, X = read_wav_file(file)
+audio_samplerate = audio_meta_data["fs"]
+X = X[0][wave_offset:n_samples + wave_offset]
+#print(pywt.wavelist())
+wavelet_family = "db2"
+wave = pywt.Wavelet(wavelet_family)
 
-D = []
-for _ in range(n_domains):
-    i = random.randint(0, n_samples - (block_size * 2))
-    j = random.randint(0, n_samples - (block_size * 2))
-    D.append(img[j:j + (block_size * 2), i:i + (block_size * 2)])
+DECOMP_LEVEL = 4
+
+wave_coeff_pyramid = pywt.wavedec(X, wavelet_family,
+                                  level=DECOMP_LEVEL, mode="symmetric")
+
+for level in wave_coeff_pyramid:
+    print(len(level))
+
+

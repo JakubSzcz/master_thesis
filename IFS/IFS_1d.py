@@ -76,7 +76,7 @@ class IFS:
         n_range = len(ranges)
         n_domains = len(domains)
         n_start_samples = len(domains_starting_sample)
-        progress_incrementor = int(0.05 * n_range)  # for logging purpose
+        progress_incrementor = 1 if int(0.05 * n_range) == 0 else int(0.05 * n_range)  # for logging purpose
         d_unique = set()
         codded = []
 

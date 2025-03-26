@@ -6,7 +6,7 @@ import util.common as common
 import util.math as mymath
 
 # parameters
-n_samples = 50000  # samples in base signal
+n_samples = 1000  # samples in base signal
 n_domains = 10  # number of Domain blocks
 range_block_size = 10  # number of Range blocks
 wave_offset = 100000
@@ -14,7 +14,7 @@ wave_offset = 100000
 # reading audio files
 sound = "../resources/sound.wav"
 speech = "../resources/en_speech.wav"
-file = sound
+file = speech
 audio_meta_data, X = read_wav_file(file)
 audio_samplerate = audio_meta_data["fs"]
 # reads only one channel with offset
