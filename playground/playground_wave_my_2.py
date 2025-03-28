@@ -93,13 +93,13 @@ def generate_blocks(signal: np.ndarray, decomposition_level: int, block_height: 
 
 
 # parameters
-n = 6
+n = 9
 n_samples = 2 ** n  # samples in base signal
 wave_offset = 100000
 
 # generating base image
-file = "../resources/sound.wav"
-#file = "../resources/en_speech.wav"
+#file = "../resources/sound.wav"
+file = "../resources/en_speech.wav"
 audio_meta_data, X = read_wav_file(file)
 audio_samplerate = audio_meta_data["fs"]
 X = X[0][wave_offset:n_samples + wave_offset]
@@ -120,7 +120,6 @@ start_time_enc = time.time()
 print("starting encoding...")
 R, D, coff_to_be_stored, all_coeffs = generate_blocks(X, DECOMP_LEVEL, RANGE_BLOCK_HEIGHT, wavelet_family=wavelet,
                                                       return_coeffs=True)
-pprint.pprint(R)
 # flatten R and D
 R_flatten = []
 D_flatten = []
@@ -188,6 +187,7 @@ for _ in range(10):
                 mymath.transform(w[1], w[2], decoded[K + k_prim][w[0] * k_prim_pow: w[0] * k_prim_pow + k_prim_pow]))
 
 # TODO try filtering coeffs before
+pprint.pprint(decoded)
 reconstructed_signal = pywt.waverec(decoded, wavelet)
 print(f"finished decoding with {round(time.time() - start_time_dec, 2)}s.")
 
@@ -196,13 +196,13 @@ highest_freq = mymath.find_highest_frequency(X, audio_samplerate)
 filtered = mymath.butter_lowpass_filter(reconstructed_signal, highest_freq + 0.0001, audio_samplerate)
 
 # PLOTTING
-for ind, lev in enumerate(decoded):
-    plt.plot(lev)
-    if ind == 0:
-        plt.title(f"{wavelet} wavelet decomposition reconstructed level b_{ind}")
-    else:
-        plt.title(f"{wavelet} wavelet decomposition reconstructed level a_{ind - 1}")
-    plt.show()
+# for ind, lev in enumerate(decoded):
+#     plt.plot(lev)
+#     if ind == 0:
+#         plt.title(f"{wavelet} my_2 wavelet decomposition reconstructed level b_{ind}")
+#     else:
+#         plt.title(f"{wavelet} my_2 wavelet decomposition reconstructed level a_{ind - 1}")
+#     plt.show()
 
 common.print_signal(X, "original signal")
 common.print_signal(reconstructed_signal, "reconstructed signal")
