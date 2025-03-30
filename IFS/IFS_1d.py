@@ -4,6 +4,8 @@ import numpy as np
 import time
 
 
+# TODO disable logging parameter
+# TODO consider  no setup_values
 class IFS:
     # parameters default values
     RANGE_BLOCK_SIZE = 10  # size of range block (domain block = *2)

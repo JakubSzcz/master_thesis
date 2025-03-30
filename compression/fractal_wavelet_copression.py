@@ -1,12 +1,12 @@
 import numpy as np
-import sounddevice as sd
 import util.math as mymath
-import util.common as common
 import pywt
 import time
 
 
-# TODO CYCLIC BUFFER and CUSTOM OVERLAPPING
+# TODO CUSTOM OVERLAPPING - as for now only Cyclic buffer supported
+# TODO documentation, comments
+# TODO disable logging parameter
 def get_sub_block(starting_ind: int, samples_to_add: int, org_block: np.ndarray) -> (int, np.ndarray):
     # go with buffer to the start, index not exceed
     block = []
@@ -162,35 +162,3 @@ def wavelet_decompostion(signal: np.ndarray, wavelet_family: str, decomposition_
     print("starting wavelet decomposition...")
     # DWT on X
     return pywt.wavedec(signal, wavelet_family, level=decomposition_level)
-
-
-# PARAMETERS
-n = 12
-n_samples = 2 ** n  # samples in base signal
-wave_offset = 100000
-DECOMP_LEVEL = 4
-block_height = 3
-K = DECOMP_LEVEL - block_height
-wavelet_family = 'coif12'
-
-# reading base image
-X, audio_samplerate = common.read_example_file()
-
-# DWT on X
-wave_coeffes = wavelet_decompostion(X, wavelet_family, DECOMP_LEVEL)
-
-# ENCODING
-# (to_be_stored, coded_blocks)
-codded = encode_wavelets(wave_coeffes, K, block_height)
-
-# DECODING
-reconstructed_signal = decode(codded, wavelet_family, K, block_height, n_samples)
-
-# PRINTING
-common.print_signal(X, "original signal")
-common.print_signal(reconstructed_signal, "reconstructed signal")
-common.print_attr_vs_orig(reconstructed_signal, X)
-
-# PLAYING
-sd.play(X, samplerate=audio_samplerate, blocking=True)
-sd.play(np.array(reconstructed_signal), samplerate=audio_samplerate, blocking=True)
