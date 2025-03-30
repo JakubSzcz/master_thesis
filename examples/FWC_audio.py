@@ -7,7 +7,7 @@ import util.common as common
 DECOMPOSITION_LEVEL = 4
 BLOCK_HEIGHT = 3
 RANGE_BLOCKS_LEVEL = DECOMPOSITION_LEVEL - BLOCK_HEIGHT
-WAVELET_FAMILY = 'db10'
+WAVELET_FAMILY = 'coif12'
 file_types = ("sound", "speech")
 file_type = file_types[0]
 title_appendix = f"for {file_type} with {WAVELET_FAMILY}"
