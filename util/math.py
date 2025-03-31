@@ -1,7 +1,8 @@
 import numpy as np
 import scipy.signal as signal
+from numba import njit
 
-
+@njit
 def distance(x, y):
     """
     calculate the Euclidean distance between two vectors
@@ -11,7 +12,7 @@ def distance(x, y):
     """
     return np.linalg.norm(x - y)
 
-
+@njit
 def calculate_alpha_beta(x, z):
     """
     returns minimal value of alpha and beta for affine transformation
@@ -36,7 +37,7 @@ def calculate_alpha_beta(x, z):
 
     return alpha, beta
 
-
+@njit
 def transform(alpha, beta, x):
     """
     performs affine transformation on the x with alpha and beta defined as: alpha * x + beta
