@@ -66,6 +66,13 @@ def calculate_rms(x, y):
 
 
 def find_highest_frequency(signal_data, fs, threshold_ratio=0.1):
+    """
+    Returns highest frequency of signal data
+    :param signal_data: array of samples of original signal
+    :param fs: sampling frequency of signal
+    :param threshold_ratio: significant frequencies threshold ratio
+    :return: the highest frequency in signal
+    """
     # Compute FFT
     fft_values = np.fft.rfft(signal_data)  # Compute FFT (only positive frequencies)
     freqs = np.fft.rfftfreq(len(signal_data), 1 / fs)  # Frequency bins
@@ -81,6 +88,14 @@ def find_highest_frequency(signal_data, fs, threshold_ratio=0.1):
 
 # Low-pass filter design
 def butter_lowpass_filter(data, cutoff, fs, order=4):
+    """
+    Filters signal data using lowpass filter
+    :param data: signal to be filtered
+    :param cutoff: frequency cutoff for lowpass filter
+    :param fs: sampling frequency
+    :param order: order of lowpass filter
+    :return: filtered signal
+    """
     nyquist = 0.5 * fs  # Nyquist frequency
     normal_cutoff = cutoff / nyquist  # Normalize cutoff frequency
     b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)  # Butterworth filter

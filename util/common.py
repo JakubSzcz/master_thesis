@@ -6,6 +6,16 @@ from util.wavFile import read_wav_file
 
 def print_attr_vs_orig(attractor: list | np.ndarray, original: list | np.ndarray, n_range: int = None,
                        n_domains: int = None, title: str = None, title_appendix: str = None):
+    """
+    Prints attractor vs original signals at the same plot.
+    :param attractor: reconstructed signal/attractor to print
+    :param original: original signal to print
+    :param n_range: optional number of range blocks (for title purpose)
+    :param n_domains: optional number of domain blocks (for title purpose)
+    :param title: optional custom title
+    :param title_appendix: optional custom title appendix for default title
+    :return: plots attractor vs original signals and calculate Euclidian distance from both vectors
+    """
     plt.figure()
     plt.grid()
     if title is None:
@@ -26,11 +36,17 @@ def print_attr_vs_orig(attractor: list | np.ndarray, original: list | np.ndarray
     plt.show()
 
     print(f"Euclidian distance = {mymath.distance(attractor, original)}")
-    # print(f"MSE = {mymath.calculate_mse(attractor, original)}")
-    # print(f"RMS = {mymath.calculate_rms(attractor, original)}")
 
 
 def print_signal(signal: list | np.ndarray, title: str, plot_ranges_size: int = None, title_appendix: str = None):
+    """
+    Prints single signal.
+    :param signal: signal to print
+    :param title: custom title for plot
+    :param plot_ranges_size: optional size of sub-blocks for printing vertical lines spacing range blocks
+    :param title_appendix: optional custom title appendix for default title
+    :return: plots signal
+    """
     plt.figure()
     plt.grid()
     if title_appendix is not None:
@@ -45,6 +61,13 @@ def print_signal(signal: list | np.ndarray, title: str, plot_ranges_size: int = 
 
 
 def read_example_file(n_samples: int = 2 ** 12, samples_offset: int = 100000, file_type: str = "sound"):
+    """
+    Shortcut function for reading example audio files.
+    :param n_samples: how many samples to read (default 2 ** 12)
+    :param samples_offset: how many samples to skip/shift (default 100000)
+    :param file_type: type of audio file to read (default "sound")
+    :return: Samples of single audio channel of audio file
+    """
     if file_type == "sound":
         file = "../resources/sound.wav"
     else:
