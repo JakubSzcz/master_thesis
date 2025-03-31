@@ -210,7 +210,7 @@ def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height:
     return np.array(reconstructed_signal)
 
 
-def wavelet_decompostion(signal: np.ndarray, wavelet_family: str, decomposition_level: int) -> list:
+def wavelet_decomposition(signal: np.ndarray, wavelet_family: str, decomposition_level: int) -> list:
     """
     Performs wavelet decomposition proces on original signal at provided level of decomposition
     :param signal: original signal to be decomposed

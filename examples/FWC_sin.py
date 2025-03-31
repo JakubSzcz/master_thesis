@@ -14,7 +14,7 @@ t = np.linspace(0, 1, n_samples)
 original_signal = np.sin(t *4 * np.pi)
 
 # DWT on signal (wavelet decomposition)
-wavelet_coefficients = fwc.wavelet_decompostion(original_signal, WAVELET_FAMILY, DECOMPOSITION_LEVEL)
+wavelet_coefficients = fwc.wavelet_decomposition(original_signal, WAVELET_FAMILY, DECOMPOSITION_LEVEL)
 
 # ENCODING
 codded_data = fwc.encode_wavelets(wavelet_coefficients, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT)

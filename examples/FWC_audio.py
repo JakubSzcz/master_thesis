@@ -18,7 +18,7 @@ n_samples = 2 ** 12
 original_signal, audio_samplerate = common.read_example_file(n_samples=n_samples, file_type=file_type)
 
 # DWT on signal (wavelet decomposition)
-wavelet_coefficients = fwc.wavelet_decompostion(original_signal, WAVELET_FAMILY, DECOMPOSITION_LEVEL)
+wavelet_coefficients = fwc.wavelet_decomposition(original_signal, WAVELET_FAMILY, DECOMPOSITION_LEVEL)
 
 # ENCODING
 # codded_data = (to_be_stored, coded_blocks)
