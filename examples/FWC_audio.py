@@ -12,7 +12,7 @@ file_types = ("sound", "speech")
 file_type = file_types[0]
 title_appendix = f"for {file_type} with {WAVELET_FAMILY}"
 
-n_samples = 2 ** 16
+n_samples = 2 ** 14
 
 # READING ORIGINAL SIGNAL
 original_signal, audio_samplerate = common.read_example_file(n_samples=n_samples, file_type=file_type)

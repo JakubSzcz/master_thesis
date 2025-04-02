@@ -2,6 +2,7 @@ import numpy as np
 import scipy.signal as signal
 from numba import njit
 
+
 @njit
 def distance(x, y):
     """
@@ -11,6 +12,7 @@ def distance(x, y):
     :return: distance
     """
     return np.linalg.norm(x - y)
+
 
 @njit
 def calculate_alpha_beta(x, z):
@@ -37,6 +39,7 @@ def calculate_alpha_beta(x, z):
 
     return alpha, beta
 
+
 @njit
 def transform(alpha, beta, x):
     """
@@ -47,6 +50,22 @@ def transform(alpha, beta, x):
     :return: transformed vector
     """
     return np.multiply(x, alpha) + np.multiply(beta, np.ones(len(x)))
+
+
+@njit
+def compute_features(block: np.ndarray) -> list:
+    """
+    Computes statistical features for each block
+    :param block: retrieved from signal/wavelet coefficients
+    :return: list of statistical features of provided block: mean, variance, std, skewness, energy
+    """
+    mean = np.mean(block)
+    variance = np.var(block)
+    std = np.std(block)
+    skewness = np.mean((block - mean) ** 3) / (std ** 3 + 1e-8)  # Skewness
+    energy = np.sum(block ** 2)  # Energy of the block
+
+    return [mean, variance, std, skewness, energy]
 
 
 def downsample(v):

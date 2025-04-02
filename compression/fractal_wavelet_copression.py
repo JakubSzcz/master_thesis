@@ -7,6 +7,8 @@ import time
 # TODO CUSTOM OVERLAPPING - as for now only Cyclic buffer supported
 # TODO disable logging parameter
 # TODO IFS on lower layers
+# TODO numba over encoding
+# TODO asynchronous encoding
 def get_sub_block(starting_ind: int, samples_to_add: int, org_block: np.ndarray) -> (int, np.ndarray):
     """
     Returns sub-block from array of coefficients starting from starting_ind,
