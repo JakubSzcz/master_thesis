@@ -3,9 +3,11 @@ import util.math as mymath
 import numpy as np
 import time
 
+from util.matching import brute_force_r_to_d_matching
+
 
 # TODO disable logging parameter
-# TODO consider  no setup_values
+# TODO consider no setup_values
 class IFS:
     # parameters default values
     RANGE_BLOCK_SIZE = 10  # size of range block (domain block = *2)
@@ -80,6 +82,7 @@ class IFS:
         n_start_samples = len(domains_starting_sample)
         progress_incrementor = 1 if int(0.05 * n_range) == 0 else int(0.05 * n_range)  # for logging purpose
         d_unique = set()
+        domains_down = [mymath.downsample(d) for d in domains]
         codded = []
 
         assert n_range > 0, "No range blocks provided."
@@ -93,32 +96,10 @@ class IFS:
             if r_i % progress_incrementor == 0:
                 print(f"\rProgress: {round(r_i * 100 / n_range, 2)}%.", end="", flush=True)
 
-            # parameters to encode
-            distance_min = 1000000
-            d_starting_sample = 0
-            fit_alpha = 1
-            fit_beta = 0
-
-            # find the best base domain from domain pool to transform into range block with min d_rms
-            for d_i, d in enumerate(domains):
-                d_down = mymath.downsample(d)
-                alpha, beta = mymath.calculate_alpha_beta(d_down, r)
-                transformed = mymath.transform(alpha, beta, d_down)
-                distance_calc = mymath.distance(d_down, transformed)
-
-                if distance_calc < distance_min:
-                    d_starting_sample = domains_starting_sample[d_i]
-                    d_unique.add(d_i)
-                    fit_alpha = alpha
-                    fit_beta = beta
-                    distance_min = distance_calc
-
-                # already found d_rms satisfies threshold, stop searching
-                if distance_min < self.D_THRESHOLD:
-                    break
-
+            d_indx, fit_alpha, fit_beta = brute_force_r_to_d_matching(r, np.array(domains_down))
+            d_unique.add(d_indx)
             # encoded parameters for each range block
-            codded.append((d_starting_sample, fit_alpha, fit_beta))
+            codded.append((domains_starting_sample[d_indx], fit_alpha, fit_beta))
 
         print(f"\rProgress: 100%.", flush=True)
         print(f"encoding finished with {round(time.time() - start_time, self.TIME_ROUNDING)} seconds.")

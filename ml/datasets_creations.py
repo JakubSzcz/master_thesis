@@ -14,9 +14,9 @@ def read_signals(files: list):
         metadata, signal = read_wav_file(file)
         if metadata["channels"] > 1:
             for channel_n, channel in enumerate(signal):
-                signals[f"{signal_id}_{channel_n}"] = channel[:2**12]
+                signals[f"{signal_id}_{channel_n}"] = channel[:2 ** 12]
         else:
-            signals[f"{signal_id}"] = signal[0][:2**12]
+            signals[f"{signal_id}"] = signal[0][:2 ** 12]
     return signals
 
 
@@ -49,12 +49,18 @@ def create_datasets(wavelets_coefficients: list, r_blocks_level: int, block_heig
                 distance_min = distance_calc
 
         # save parameters for each range block
-        attr = mymath.compute_features(r)
-        dataset.append([signal_id, r_i, d_index, attr[0], attr[1], attr[2], attr[3], attr[4]])
+        r_features = mymath.compute_features(r)
+        d_features = mymath.compute_features(d_matrix[d_index])
+
+        # [signal_id, r_index, r_mean, r_variance, r_std, r_skewness, r_energy, d_index, d_mean, d_variance,
+        # d_std, d_skewness, d_energy,]
+        dataset.append([signal_id, r_i, r_features[0], r_features[1], r_features[2], r_features[3], r_features[4],
+                        d_index, d_features[0], d_features[1], d_features[2], d_features[3], d_features[4]])
     print("\rProgress: 100%.", flush=True)
     print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s for {signal_id}")
     return pd.DataFrame(dataset,
-                        columns=["signal_id", "r_ind", "d_ind", "mean", "variance", "std", "skewness", "energy"])
+                        columns=["signal_id", "r_ind", "r_mean", "r_variance", "r_std", "r_skewness", "r_energy",
+                                 "d_ind", "d_mean", "d_variance", "d_std", "d_skewness", "d_energy"])
 
 
 # PARAMETERS
@@ -73,4 +79,3 @@ dfs = {}
 for signal_id, wavelet_coefficients in wavelet_coefficients.items():
     df = create_datasets(wavelet_coefficients, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT, signal_id)
     df.to_csv(f"./datasets/{signal_id}.csv", index=False)
-
