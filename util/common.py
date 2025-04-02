@@ -35,7 +35,7 @@ def print_attr_vs_orig(attractor: list | np.ndarray, original: list | np.ndarray
     plt.legend()
     plt.show()
 
-    print(f"Euclidian distance = {mymath.distance(attractor, original)}")
+    print(f"Euclidian distance = {mymath.distance(np.array(attractor), original)}")
     print(f"MSE = {mymath.calculate_mse(attractor, original)}")
 
 
