@@ -4,10 +4,10 @@ import sounddevice as sd
 import util.common as common
 
 # PARAMETERS
-DECOMPOSITION_LEVEL = 4
-BLOCK_HEIGHT = 3
+DECOMPOSITION_LEVEL = 6
+BLOCK_HEIGHT = 4
 RANGE_BLOCKS_LEVEL = DECOMPOSITION_LEVEL - BLOCK_HEIGHT
-WAVELET_FAMILY = 'coif12'
+WAVELET_FAMILY = 'db10'
 file_types = ("sound", "speech")
 file_type = file_types[0]
 title_appendix = f"for {file_type} with {WAVELET_FAMILY}"

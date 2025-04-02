@@ -1,4 +1,6 @@
 import numpy as np
+from numba import njit
+
 import util.math as mymath
 import pywt
 import time
@@ -7,7 +9,6 @@ import time
 # TODO CUSTOM OVERLAPPING - as for now only Cyclic buffer supported
 # TODO disable logging parameter
 # TODO IFS on lower layers
-# TODO numba over encoding
 # TODO asynchronous encoding
 def get_sub_block(starting_ind: int, samples_to_add: int, org_block: np.ndarray) -> (int, np.ndarray):
     """
@@ -121,39 +122,26 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
     """
     start_time_enc = time.time()
     print("starting encoding...")
+
     # prepare blocks
     a_coeffs = wavelets_coefficients[1:]
     coeffs_to_be_stored = wavelets_coefficients[:r_blocks_level + 1]
     r_matrix, d_matrix = generate_r_d(r_blocks_level, block_height, a_coeffs)
+
     n_range, _ = r_matrix.shape
     n_domain, _ = d_matrix.shape
-    # encode
     uniq_d = set()
     progress_incrementor = 1 if int(0.05 * n_range) == 0 else int(0.05 * n_range)
     codded = []
+
+    # encoded parameters for each range block
     for r_i, r in enumerate(r_matrix):
         # progress logging
         if r_i % progress_incrementor == 0:
             print(f"\rProgress: {round(r_i * 100 / n_range, 2)}%.", end="", flush=True)
-        # parameters to encode
-        distance_min = 1000000
-        d_index = 0
-        fit_alpha = 1
-        fit_beta = 0
 
-        # find the best base domain from domain pool to transform into range block with min d_rms
-        for d_i, d in enumerate(d_matrix):
-            alpha, beta = mymath.calculate_alpha_beta(d, r)
-            transformed = mymath.transform(alpha, beta, d)
-            distance_calc = mymath.distance(d, transformed)
-
-            if distance_calc < distance_min:
-                fit_alpha = alpha
-                fit_beta = beta
-                d_index = d_i
-                distance_min = distance_calc
-
-        # encoded parameters for each range block
+        # find best match
+        d_index, fit_alpha, fit_beta = brute_force_r_to_d_pairing(r, d_matrix)
         codded.append((d_index, fit_alpha, fit_beta))
         uniq_d.add(d_index)
     print("\rProgress: 100%.", flush=True)
@@ -226,3 +214,32 @@ def wavelet_decomposition(signal: np.ndarray, wavelet_family: str, decomposition
     print("starting wavelet decomposition...")
     # DWT on X
     return pywt.wavedec(signal, wavelet_family, level=decomposition_level)
+
+
+@njit
+def brute_force_r_to_d_pairing(r: np.ndarray, d_matrix: np.ndarray) -> tuple:
+    # threshold to stop searching if fulfilled
+    d_threshold = 0.0001
+
+    # parameters to encode
+    distance_min = 1000000
+    d_index = 0
+    fit_alpha = 1
+    fit_beta = 0
+
+    # find the best base domain from domain pool to transform into range block with min d_rms
+    for d_i, d in enumerate(d_matrix):
+        alpha, beta = mymath.calculate_alpha_beta(d, r)
+        transformed = mymath.transform(alpha, beta, d)
+        distance_calc = mymath.distance(d, transformed)
+
+        if distance_calc < distance_min:
+            fit_alpha = alpha
+            fit_beta = beta
+            d_index = d_i
+            distance_min = distance_calc
+
+        # already found distance_min satisfies threshold, stop searching
+        if distance_min < d_threshold:
+            break
+    return d_index, fit_alpha, fit_beta

@@ -36,6 +36,7 @@ def print_attr_vs_orig(attractor: list | np.ndarray, original: list | np.ndarray
     plt.show()
 
     print(f"Euclidian distance = {mymath.distance(attractor, original)}")
+    print(f"MSE = {mymath.calculate_mse(attractor, original)}")
 
 
 def print_signal(signal: list | np.ndarray, title: str, plot_ranges_size: int = None, title_appendix: str = None):

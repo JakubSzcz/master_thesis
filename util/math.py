@@ -23,6 +23,9 @@ def calculate_alpha_beta(x, z):
     :return:
     tuple: alpha and beta.
     """
+    x = np.ascontiguousarray(x)
+    z = np.ascontiguousarray(z)
+
     y = np.ones(len(x))
 
     # Denominator for both formulas
