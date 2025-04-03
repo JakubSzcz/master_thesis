@@ -189,9 +189,9 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
 
     return coeffs_to_be_stored, np.array(codded)
 
-# TODO extract while loop to be numba adjusted function
+
 def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height: int, n_org_signal_samples: int,
-           decoding_iter=10) -> np.ndarray:
+           decoding_iter: int = 10) -> np.ndarray:
     """
     Performs decoding proces of wavelets coefficients above some level of decomposition by using IFS.
     :param coded: tuple with wavelet coefficients below provided level stored directly and information
@@ -219,22 +219,9 @@ def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height:
     decoded = to_be_stored.copy()
     decoded.extend([np.random.uniform(0, 1, i) for i in n_coeffs_level])
 
-    for _ in range(decoding_iter):
-        for iter_n, i in enumerate(range(r_blocks_level, r_blocks_level + block_height)):
-            samples_to_add = 2 ** iter_n
-            starting_index = 0
-            counter = 0
-            while counter < len(coded_blocks):
-                w = coded_blocks[counter]
-                # get d block elements at level k-1
-                _, d_to_decode_from = get_sub_block(int(w[0] * samples_to_add), samples_to_add, decoded[
-                    iter_n + r_blocks_level])  # r is on K level, d is on K + 1 level but since decoded includes b_0 at 0 index, d level and r level are ++
-                # perform transformation
-                r_transformed = mymath.transform(w[1], w[2], d_to_decode_from)
-                # set r_transformed
-                starting_index = set_sub_block(starting_index, samples_to_add, decoded[iter_n + r_blocks_level + 1],
-                                               r_transformed)
-                counter += 1
+    # wavelet coefficients IFS decoding
+    decoded = wavelet_ifs_transform(decoded, coded_blocks, r_blocks_level, block_height, decoding_iter)
+
     reconstructed_signal = pywt.waverec(decoded, wavelet_family)
     print(f"finished decoding with {round(time.time() - start_time_dec, 2)}s.")
     return np.array(reconstructed_signal)
@@ -254,3 +241,37 @@ def wavelet_decomposition(signal: np.ndarray, wavelet_family: str, decomposition
     print("starting wavelet decomposition...")
     # DWT on X
     return pywt.wavedec(signal, wavelet_family, level=decomposition_level)
+
+
+@njit
+def wavelet_ifs_transform(coefficients_base: np.ndarray, coded_blocks: tuple, r_blocks_level: int, block_height: int,
+                          decoding_iter: int) -> np.ndarray:
+    """
+    IFS decoding main functionalities extracted for numba compliance
+    :param coefficients_base: 2D nd array with wavelet coefficients on first few levels and noise on the rest
+    :param coded_blocks: information for FWC decoding: (starting index of domain block, alpha parameter,
+        beta parameter) for each range block
+    :param r_blocks_level: level at which range blocks roots are. Domain blocks is at one level below
+    :param block_height: how big the single block (tree) is
+    :param decoding_iter: number of iterations for IFS decoding
+    :return: reconstructed coefficient of wavelet decomposition of original signal
+    """
+    for _ in range(decoding_iter):
+        for iter_n, i in enumerate(range(r_blocks_level, r_blocks_level + block_height)):
+            samples_to_add = 2 ** iter_n
+            starting_index = 0
+            counter = 0
+            while counter < len(coded_blocks):
+                w = coded_blocks[counter]
+                # get d block elements at level k-1
+                _, d_to_decode_from = get_sub_block(int(w[0] * samples_to_add), samples_to_add, coefficients_base[
+                    iter_n + r_blocks_level])  # r is on K level, d is on K + 1 level but since decoded includes b_0 at 0 index, d level and r level are ++
+                # perform transformation
+                r_transformed = mymath.transform(w[1], w[2], d_to_decode_from)
+                # set r_transformed
+                starting_index = set_sub_block(starting_index, samples_to_add,
+                                               coefficients_base[iter_n + r_blocks_level + 1],
+                                               r_transformed)
+                counter += 1
+
+    return coefficients_base

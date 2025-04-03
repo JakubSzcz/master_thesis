@@ -12,7 +12,7 @@ file_types = ("sound", "speech")
 file_type = file_types[0]
 title_appendix = f"for {file_type} with {WAVELET_FAMILY}"
 
-n_samples = 2 ** 18
+n_samples = 2 ** 20
 
 # READING ORIGINAL SIGNAL
 original_signal, audio_samplerate = common.read_example_file(n_samples=n_samples, file_type=file_type)
@@ -33,5 +33,5 @@ common.print_signal(decoded_signal, "reconstructed signal", title_appendix=title
 common.print_attr_vs_orig(decoded_signal, original_signal, title_appendix=title_appendix)
 
 # PLAYING
-sd.play(original_signal, samplerate=audio_samplerate, blocking=True)
-sd.play(np.array(decoded_signal), samplerate=audio_samplerate, blocking=True)
+# sd.play(original_signal, samplerate=audio_samplerate, blocking=True)
+# sd.play(np.array(decoded_signal), samplerate=audio_samplerate, blocking=True)
