@@ -6,6 +6,13 @@ import util.math as mymath
 
 @njit
 def brute_force_r_to_d_matching(r: np.ndarray, d_matrix: np.ndarray, allow_threshold: bool = True) -> tuple:
+    """
+    For provided r block, iterates over all possible d finding best match (with L2 metric)
+    :param r: range block to be matched
+    :param d_matrix: domain blocks pool to find match from
+    :param allow_threshold: flag whether to stop searching for best possible match if threshold is satisfied
+    :return: tuple of best match and affine transformation parameters (d_index, fit_alpha, fit_beta)
+    """
     # threshold to stop searching if fulfilled
     d_threshold = 0.0001
 

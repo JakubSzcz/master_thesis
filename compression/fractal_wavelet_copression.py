@@ -13,6 +13,7 @@ import util.math as mymath
 # TODO disable logging parameter
 # TODO IFS on lower layers
 # TODO asynchronous encoding
+# TODO get/set sub_block_2d functions and test performance improvements
 class MatchingType(Enum):
     BRUTE_FORCE = 1
     FAISS = 2
@@ -188,7 +189,7 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
 
     return coeffs_to_be_stored, np.array(codded)
 
-
+# TODO extract while loop to be numba adjusted function
 def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height: int, n_org_signal_samples: int,
            decoding_iter=10) -> np.ndarray:
     """
