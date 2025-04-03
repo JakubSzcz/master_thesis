@@ -1,6 +1,9 @@
 import numpy as np
 import pywt
 import time
+from enum import Enum
+import faiss
+from numba import njit
 
 from util.matching import brute_force_r_to_d_matching
 import util.math as mymath
@@ -10,40 +13,41 @@ import util.math as mymath
 # TODO disable logging parameter
 # TODO IFS on lower layers
 # TODO asynchronous encoding
+class MatchingType(Enum):
+    BRUTE_FORCE = 1
+    FAISS = 2
+
+
+@njit(cache=True)
 def get_sub_block(starting_ind: int, samples_to_add: int, org_block: np.ndarray) -> (int, np.ndarray):
     """
     Returns sub-block from array of coefficients starting from starting_ind,
     applying Cyclic Buffer if the starting_index + length of sub-block exceeds length of original array.
     :param starting_ind: index of sample in original array from which sub-block will be extracted
     :param samples_to_add: how many samples to add to create sub-block (length of sub-block)
-    :param org_block: original array from which sub-block will be extracted
-    :return: tuple of modified starting_index for next sub-block and sub-block
+    :param org_block: 1D original array from which sub-block will be extracted
+    :return: tuple of modified starting_index for next sub-block and 1D sub-block itself
     """
-    block = []
-    # default addition, index not exceed
-    if starting_ind + samples_to_add < len(org_block):
-        block.extend(org_block[starting_ind:starting_ind + samples_to_add])
-        starting_ind = starting_ind + samples_to_add
-    # if starting index already in new cycle buffer, shift starting index and call get_sub_block with new values
-    elif starting_ind > len(org_block):
-        shift_counter = int(starting_ind / len(org_block))
-        starting_ind = starting_ind - shift_counter * len(org_block)
-        _, block = get_sub_block(starting_ind, samples_to_add, org_block)
-    # go with buffer to the start, index not exceed
-    elif starting_ind + samples_to_add == len(org_block):
-        block.extend(org_block[starting_ind:])
-        starting_ind = 0
-    # go with buffer to the start, index is exceed, firstly add leftovers
-    elif starting_ind + samples_to_add > len(org_block):
-        samples_left = samples_to_add - (len(org_block) - starting_ind)
-        block.extend(org_block[starting_ind:])
-        starting_ind = 0
-        block.extend(org_block[starting_ind:starting_ind + samples_left])
-        starting_ind += samples_left
+    n = len(org_block)
 
-    return starting_ind, np.array(block)
+    # Cyclic Buffer index applied
+    current_start = starting_ind % n
+
+    # pre-allocate the output array
+    sub_block = np.empty(samples_to_add, dtype=org_block.dtype)
+
+    # fill the output array element-wise, modulo for cyclic access
+    for i in range(samples_to_add):
+        source_idx = (current_start + i) % n
+        sub_block[i] = org_block[source_idx]
+
+    # next starting index after samples_to_add
+    next_starting_ind = (current_start + samples_to_add) % n
+
+    return next_starting_ind, sub_block
 
 
+@njit(cache=True)
 def set_sub_block(starting_ind: int, samples_to_add: int, org_block: np.ndarray, new_block: np.ndarray) -> int:
     """
     Modifies original array with new sub-block according to starting_ind and samples_to_add applying Cyclic Buffer.
@@ -53,23 +57,35 @@ def set_sub_block(starting_ind: int, samples_to_add: int, org_block: np.ndarray,
     :param new_block: array of coefficients to modify org_block with
     :return: modified starting_index for next sub-block
     """
+    n = len(org_block)
+    current_start = starting_ind % n
+    end_ind = current_start + samples_to_add
+
     # default, index not exceed
-    if starting_ind + samples_to_add < len(org_block):
-        org_block[starting_ind:starting_ind + samples_to_add] = new_block
-        starting_ind = starting_ind + samples_to_add
-    # go with buffer to the start, index not exceed
-    elif starting_ind + samples_to_add == len(org_block):
-        org_block[starting_ind:] = new_block
-        starting_ind = 0
+    if end_ind <= n:
+        org_block[current_start:end_ind] = new_block
+        next_starting_ind = end_ind
+
     # go with buffer to the start, index is exceed, firstly add leftovers
-    elif starting_ind + samples_to_add > len(org_block):
-        samples_left = samples_to_add - (len(org_block) - starting_ind)
-        org_block[starting_ind:] = new_block[:(samples_to_add - samples_left)]
-        starting_ind = 0
-        org_block[starting_ind:starting_ind + samples_left] = (
-                (new_block[(samples_to_add - samples_left):] + org_block[starting_ind:starting_ind + samples_left]) / 2)
-        starting_ind += samples_left
-    return starting_ind
+    else:
+        # fit before the wrap
+        end_part_len = n - current_start
+        # to be placed at the beginning after wrapping
+        start_part_len = samples_to_add - end_part_len
+
+        # from current_start to the end
+        if end_part_len > 0:  # in case if current_start is n-1
+            org_block[current_start:] = new_block[:end_part_len]
+
+        # from the beginning to leftovers
+        if start_part_len > 0:
+            target_slice_at_start = org_block[:start_part_len]
+            source_slice_for_start = new_block[end_part_len: end_part_len + start_part_len]
+
+            org_block[:start_part_len] = (source_slice_for_start + target_slice_at_start) / 2.0
+
+        next_starting_ind = start_part_len
+    return next_starting_ind
 
 
 def generate_blocks_matrix(blocks_level: int, block_height: int, coefficients: np.ndarray) -> np.ndarray:
@@ -111,9 +127,11 @@ def generate_r_d(r_blocks_level: int, block_height: int, coefficients: np.ndarra
     return r, d
 
 
-def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_height: int) -> (np.ndarray, np.ndarray):
+def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_height: int,
+                    matching_type: MatchingType = MatchingType.FAISS) -> (np.ndarray, np.ndarray):
     """
     Performs fractal encoding of wavelets coefficients above some level of decomposition.
+    :param matching_type: what type of paring range to domain blocks to use [BRUTEFORCE, FAISS]
     :param wavelets_coefficients: list of lists of wavelets coefficients at each levels
     :param r_blocks_level: level at which range blocks roots are. Domain blocks is at one level below
     :param block_height: how big the single block (tree) is
@@ -128,25 +146,46 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
     coeffs_to_be_stored = wavelets_coefficients[:r_blocks_level + 1]
     r_matrix, d_matrix = generate_r_d(r_blocks_level, block_height, a_coeffs)
 
-    n_range, _ = r_matrix.shape
+    n_range, dim = r_matrix.shape
     n_domain, _ = d_matrix.shape
     uniq_d = set()
     progress_incrementor = 1 if int(0.05 * n_range) == 0 else int(0.05 * n_range)
     codded = []
 
-    # encoded parameters for each range block
-    for r_i, r in enumerate(r_matrix):
-        # progress logging
-        if r_i % progress_incrementor == 0:
-            print(f"\rProgress: {round(r_i * 100 / n_range, 2)}%.", end="", flush=True)
+    # FAISS TYPE
+    # matching preparation
+    if matching_type == MatchingType.FAISS:
+        index_faiss = faiss.IndexFlatIP(dim)
+        index_faiss.add(d_matrix)
+        _, best_matches_indices = index_faiss.search(r_matrix, 1)
+        for r_i, best_matched in enumerate(best_matches_indices):
+            d_index = best_matched[0]
+            # progress logging
+            if r_i % progress_incrementor == 0:
+                print(f"\rProgress: {round(r_i * 100 / n_range, 2)}%.", end="", flush=True)
+            fit_alpha, fit_beta = mymath.calculate_alpha_beta(d_matrix[d_index], r_matrix[r_i])
+            codded.append((d_index, fit_alpha, fit_beta))
+            uniq_d.add(d_index)
+        print("\rProgress: 100%.", flush=True)
+        print(f"d used: {len(uniq_d)}/{n_domain}")
+        print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s.")
 
-        # find best match
-        d_index, fit_alpha, fit_beta = brute_force_r_to_d_matching(r, d_matrix)
-        codded.append((d_index, fit_alpha, fit_beta))
-        uniq_d.add(d_index)
-    print("\rProgress: 100%.", flush=True)
-    print(f"d used: {len(uniq_d)}/{n_domain}")
-    print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s.")
+    # BRUTEFORCE TYPE
+    # encoded parameters for each range block
+    if matching_type == MatchingType.BRUTE_FORCE:
+        for r_i, r in enumerate(r_matrix):
+            # progress logging
+            if r_i % progress_incrementor == 0:
+                print(f"\rProgress: {round(r_i * 100 / n_range, 2)}%.", end="", flush=True)
+
+            # find best match
+            d_index, fit_alpha, fit_beta = brute_force_r_to_d_matching(r, d_matrix)
+            codded.append((d_index, fit_alpha, fit_beta))
+            uniq_d.add(d_index)
+        print("\rProgress: 100%.", flush=True)
+        print(f"d used: {len(uniq_d)}/{n_domain}")
+        print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s.")
+
     return coeffs_to_be_stored, np.array(codded)
 
 

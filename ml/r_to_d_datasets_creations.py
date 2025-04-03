@@ -1,10 +1,10 @@
-import numpy as np
 import time
 import pandas as pd
 
 import compression.fractal_wavelet_copression as fwc
-from util.wavFile import read_wav_file
 import util.math as mymath
+from util.matching import brute_force_r_to_d_matching
+from util.wavFile import read_wav_file
 
 
 def read_signals(files: list):
@@ -14,9 +14,9 @@ def read_signals(files: list):
         metadata, signal = read_wav_file(file)
         if metadata["channels"] > 1:
             for channel_n, channel in enumerate(signal):
-                signals[f"{signal_id}_{channel_n}"] = channel[:2 ** 12]
+                signals[f"{signal_id}_{channel_n}"] = channel[:len(channel) // 8]
         else:
-            signals[f"{signal_id}"] = signal[0][:2 ** 12]
+            signals[f"{signal_id}"] = signal[0]
     return signals
 
 
@@ -36,17 +36,8 @@ def create_datasets(wavelets_coefficients: list, r_blocks_level: int, block_heig
         if r_i % progress_incrementor == 0:
             print(f"\rProgress: {round(r_i * 100 / n_range, 2)}%.", end="", flush=True)
         # parameters to encode
-        distance_min = 1000000
-        d_index = 0
-        # find the best base domain from domain pool to transform into range block with min d_rms
-        for d_i, d in enumerate(d_matrix):
-            alpha, beta = mymath.calculate_alpha_beta(d, r)
-            transformed = mymath.transform(alpha, beta, d)
-            distance_calc = mymath.distance(d, transformed)
 
-            if distance_calc < distance_min:
-                d_index = d_i
-                distance_min = distance_calc
+        d_index, _, _ = brute_force_r_to_d_matching(r, d_matrix, False)
 
         # save parameters for each range block
         r_features = mymath.compute_features(r)
@@ -58,9 +49,11 @@ def create_datasets(wavelets_coefficients: list, r_blocks_level: int, block_heig
                         d_index, d_features[0], d_features[1], d_features[2], d_features[3], d_features[4]])
     print("\rProgress: 100%.", flush=True)
     print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s for {signal_id}")
-    return pd.DataFrame(dataset,
-                        columns=["signal_id", "r_ind", "r_mean", "r_variance", "r_std", "r_skewness", "r_energy",
-                                 "d_ind", "d_mean", "d_variance", "d_std", "d_skewness", "d_energy"])
+    df = pd.DataFrame(dataset,
+                      columns=["signal_id", "r_ind", "r_mean", "r_variance", "r_std", "r_skewness", "r_energy",
+                               "d_ind", "d_mean", "d_variance", "d_std", "d_skewness", "d_energy"])
+    df.to_csv(f"./datasets/{signal_id}.csv", index=False)
+    print(f"{signal_id}.csv saved.")
 
 
 # PARAMETERS
@@ -77,5 +70,4 @@ for signal_id, signal in signals.items():
     wavelet_coefficients[signal_id] = fwc.wavelet_decomposition(signal, WAVELET_FAMILY, DECOMPOSITION_LEVEL)
 dfs = {}
 for signal_id, wavelet_coefficients in wavelet_coefficients.items():
-    df = create_datasets(wavelet_coefficients, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT, signal_id)
-    df.to_csv(f"./datasets/{signal_id}.csv", index=False)
+    create_datasets(wavelet_coefficients, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT, signal_id)

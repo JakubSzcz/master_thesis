@@ -3,7 +3,7 @@ import scipy.signal as signal
 from numba import njit
 
 
-@njit
+@njit(cache=True)
 def distance(x, y):
     """
     calculate the Euclidean distance between two vectors
@@ -11,10 +11,12 @@ def distance(x, y):
     :param y: vector 2
     :return: distance
     """
+    x = np.ascontiguousarray(x)
+    y = np.ascontiguousarray(y)
     return np.linalg.norm(x - y)
 
 
-@njit
+@njit(cache=True)
 def calculate_alpha_beta(x, z):
     """
     returns minimal value of alpha and beta for affine transformation
@@ -43,7 +45,7 @@ def calculate_alpha_beta(x, z):
     return alpha, beta
 
 
-@njit
+@njit(cache=True)
 def transform(alpha, beta, x):
     """
     performs affine transformation on the x with alpha and beta defined as: alpha * x + beta
@@ -55,13 +57,14 @@ def transform(alpha, beta, x):
     return np.multiply(x, alpha) + np.multiply(beta, np.ones(len(x)))
 
 
-@njit
+@njit(cache=True)
 def compute_features(block: np.ndarray) -> list:
     """
     Computes statistical features for each block
     :param block: retrieved from signal/wavelet coefficients
     :return: list of statistical features of provided block: mean, variance, std, skewness, energy
     """
+    block = np.ascontiguousarray(block)
     mean = np.mean(block)
     variance = np.var(block)
     std = np.std(block)

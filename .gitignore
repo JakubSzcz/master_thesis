@@ -185,3 +185,4 @@ fabric.properties
 
 # my gitignore
 /resources/*
+/ml/datasets/*.csv

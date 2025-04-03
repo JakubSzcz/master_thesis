@@ -3,8 +3,9 @@ from numba import njit
 
 import util.math as mymath
 
+
 @njit
-def brute_force_r_to_d_matching(r: np.ndarray, d_matrix: np.ndarray) -> tuple:
+def brute_force_r_to_d_matching(r: np.ndarray, d_matrix: np.ndarray, allow_threshold: bool = True) -> tuple:
     # threshold to stop searching if fulfilled
     d_threshold = 0.0001
 
@@ -27,6 +28,6 @@ def brute_force_r_to_d_matching(r: np.ndarray, d_matrix: np.ndarray) -> tuple:
             distance_min = distance_calc
 
         # already found distance_min satisfies threshold, stop searching
-        if distance_min < d_threshold:
+        if distance_min < d_threshold and allow_threshold:
             break
     return d_index, fit_alpha, fit_beta
