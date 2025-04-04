@@ -11,7 +11,7 @@ WAVELET_FAMILY = 'db10'
 file_types = ("sound", "speech", "confutatis", "badinerie", "rondo-alla-turca")
 file_type = file_types[3]
 title_appendix = f"for {file_type} with {WAVELET_FAMILY}"
-STORES_ONLY_ALPHA = True
+STORES_ONLY_ALPHA = False
 
 n_samples = 2 ** 18
 
@@ -26,7 +26,7 @@ wavelet_coefficients = fwc.wavelet_decomposition(original_signal, WAVELET_FAMILY
 codded_data = fwc.encode_wavelets(wavelet_coefficients, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT, store_only_alpha=STORES_ONLY_ALPHA)
 
 # DECODING
-decoded_signal = fwc.decode(codded_data, WAVELET_FAMILY, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT, n_samples, store_only_alpha=STORES_ONLY_ALPHA)
+decoded_signal = fwc.decode(codded_data, WAVELET_FAMILY, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT, n_samples)
 
 # PRINTING
 common.print_signal(original_signal, "original signal")

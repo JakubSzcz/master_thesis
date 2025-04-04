@@ -197,10 +197,9 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
 
 
 def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height: int, n_org_signal_samples: int,
-           decoding_iter: int = 10, store_only_alpha: bool = False) -> np.ndarray:
+           decoding_iter: int = 10) -> np.ndarray:
     """
     Performs decoding proces of wavelets coefficients above some level of decomposition by using IFS.
-    :param store_only_alpha: flag whether only alpha parameter is used while transforming blocks
     :param coded: tuple with wavelet coefficients below provided level stored directly and information
         for FWC decoding: (starting index of domain block, alpha parameter, beta parameter) for each range block
     :param wavelet_family: wavelet family used in decomposition process
@@ -213,7 +212,7 @@ def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height:
     print("starting decoding...")
     start_time_dec = time.time()
     to_be_stored, coded_blocks = coded
-    if store_only_alpha:
+    if len(coded_blocks[0]) == 2:
         fit_beta = np.full((coded_blocks.shape[0], 1), 0)
         coded_blocks = np.hstack((coded_blocks, fit_beta))
 
@@ -234,7 +233,7 @@ def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height:
     decoded = wavelet_ifs_transform(decoded, coded_blocks, r_blocks_level, block_height, decoding_iter)
 
     reconstructed_signal = pywt.waverec(decoded, wavelet_family)
-    print(f"finished decoding with {round(time.time() - start_time_dec, 2)}s.")
+    print(f"decoding finished with {round(time.time() - start_time_dec, 2)}s.")
     return np.array(reconstructed_signal)
 
 
