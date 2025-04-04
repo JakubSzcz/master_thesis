@@ -57,6 +57,8 @@ def transform(alpha, beta, x):
     :param x: vector x on which affine transformation is applied
     :return: transformed vector
     """
+    if beta == 0:
+        return np.multiply(x, alpha)
     return np.multiply(x, alpha) + np.multiply(beta, np.ones(len(x)))
 
 

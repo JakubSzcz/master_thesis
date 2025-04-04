@@ -20,113 +20,22 @@ class MatchingType(Enum):
     FAISS = 2
 
 
-@njit(cache=True)
-def get_sub_block(starting_ind: int, samples_to_add: int, org_block: np.ndarray) -> (int, np.ndarray):
+### CORE FUNCTIONS ###
+
+def wavelet_decomposition(signal: np.ndarray, wavelet_family: str, decomposition_level: int) -> list:
     """
-    Returns sub-block from array of coefficients starting from starting_ind,
-    applying Cyclic Buffer if the starting_index + length of sub-block exceeds length of original array.
-    :param starting_ind: index of sample in original array from which sub-block will be extracted
-    :param samples_to_add: how many samples to add to create sub-block (length of sub-block)
-    :param org_block: 1D original array from which sub-block will be extracted
-    :return: tuple of modified starting_index for next sub-block and 1D sub-block itself
+    Performs wavelet decomposition proces on original signal at provided level of decomposition
+    :param signal: original signal to be decomposed
+    :param wavelet_family: wavelet family used in decomposition process
+    :param decomposition_level: how deep wavelet decomposition should be
+    :return: signal decomposed into wavelet coefficients at different levels
     """
-    n = len(org_block)
-
-    # Cyclic Buffer index applied
-    current_start = starting_ind % n
-
-    # pre-allocate the output array
-    sub_block = np.empty(samples_to_add, dtype=org_block.dtype)
-
-    # fill the output array element-wise, modulo for cyclic access
-    for i in range(samples_to_add):
-        source_idx = (current_start + i) % n
-        sub_block[i] = org_block[source_idx]
-
-    # next starting index after samples_to_add
-    next_starting_ind = (current_start + samples_to_add) % n
-
-    return next_starting_ind, sub_block
-
-
-@njit(cache=True)
-def set_sub_block(starting_ind: int, samples_to_add: int, org_block: np.ndarray, new_block: np.ndarray) -> int:
-    """
-    Modifies original array with new sub-block according to starting_ind and samples_to_add applying Cyclic Buffer.
-    :param starting_ind: index of sample in original array where values from sub-block will be placed
-    :param samples_to_add: how many samples does sub-block have
-    :param org_block: original array to be modified by new sub-block
-    :param new_block: array of coefficients to modify org_block with
-    :return: modified starting_index for next sub-block
-    """
-    n = len(org_block)
-    current_start = starting_ind % n
-    end_ind = current_start + samples_to_add
-
-    # default, index not exceed
-    if end_ind <= n:
-        org_block[current_start:end_ind] = new_block
-        next_starting_ind = end_ind
-
-    # go with buffer to the start, index is exceed, firstly add leftovers
-    else:
-        # fit before the wrap
-        end_part_len = n - current_start
-        # to be placed at the beginning after wrapping
-        start_part_len = samples_to_add - end_part_len
-
-        # from current_start to the end
-        if end_part_len > 0:  # in case if current_start is n-1
-            org_block[current_start:] = new_block[:end_part_len]
-
-        # from the beginning to leftovers
-        if start_part_len > 0:
-            target_slice_at_start = org_block[:start_part_len]
-            source_slice_for_start = new_block[end_part_len: end_part_len + start_part_len]
-
-            org_block[:start_part_len] = (source_slice_for_start + target_slice_at_start) / 2.0
-
-        next_starting_ind = start_part_len
-    return next_starting_ind
-
-
-def generate_blocks_matrix(blocks_level: int, block_height: int, coefficients: np.ndarray) -> np.ndarray:
-    """
-    Generates blocks matrix at some level from root up to block_height from coefficients array (subtrees)
-    :param blocks_level: level at which blocks roots are
-    :param block_height: how big the single block (tree) is
-    :param coefficients: list of lists of wavelets coefficients at each levels
-    :return: matrix of sub-blocks where each row corresponds to a sub-block
-    """
-    n_blocks = len(coefficients[blocks_level])
-    blocks = [[] for _ in range(n_blocks)]
-    # CYCLIC BUFFER
-    for iter_n, i in enumerate(range(blocks_level, blocks_level + block_height)):
-        samples_to_add = 2 ** iter_n
-        starting_index = 0
-        counter = 0
-        while counter < n_blocks:
-            # go with buffer to the start, index not exceed
-            starting_index, temp_block = get_sub_block(starting_index, samples_to_add, coefficients[i])
-            blocks[counter].extend(temp_block)
-            counter += 1
-    return np.array(blocks)
-
-
-def generate_r_d(r_blocks_level: int, block_height: int, coefficients: np.ndarray) -> (np.ndarray, np.ndarray):
-    """
-    Based on the 'generate_blocks_matrix' function generates range blocks and domain blocks
-    :param r_blocks_level: level at which range blocks roots are. Domain blocks is at one level below
-    :param block_height: how big the single block (tree) is
-    :param coefficients: list of lists of wavelets coefficients at each levels
-    :return: two matrix of sub-blocks (subtrees), ranges and domains blocks
-    """
-    start_time_blocks = time.time()
-    print("starting generating blocks...")
-    r = generate_blocks_matrix(r_blocks_level, block_height, coefficients)
-    d = generate_blocks_matrix(r_blocks_level - 1, block_height, coefficients)
-    print(f"blocks generation finished with {round(time.time() - start_time_blocks, 2)}s.")
-    return r, d
+    max_decomp = pywt.dwt_max_level(len(signal), wavelet_family)
+    assert max_decomp >= decomposition_level, \
+        f"Desired wavelet decomposition level is too high. Maximum level is {max_decomp}."
+    print("starting wavelet decomposition...")
+    # DWT on X
+    return pywt.wavedec(signal, wavelet_family, level=decomposition_level)
 
 
 def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_height: int,
@@ -237,27 +146,124 @@ def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height:
     return np.array(reconstructed_signal)
 
 
-def wavelet_decomposition(signal: np.ndarray, wavelet_family: str, decomposition_level: int) -> list:
+### SUB FUNCTIONS ###
+
+
+@njit(cache=True)
+def get_sub_block(starting_ind: int, samples_to_add: int, org_block: np.ndarray) -> (int, np.ndarray):
     """
-    Performs wavelet decomposition proces on original signal at provided level of decomposition
-    :param signal: original signal to be decomposed
-    :param wavelet_family: wavelet family used in decomposition process
-    :param decomposition_level: how deep wavelet decomposition should be
-    :return: signal decomposed into wavelet coefficients at different levels
+    Returns sub-block from array of coefficients starting from starting_ind,
+    applying Cyclic Buffer if the starting_index + length of sub-block exceeds length of original array.
+    :param starting_ind: index of sample in original array from which sub-block will be extracted
+    :param samples_to_add: how many samples to add to create sub-block (length of sub-block)
+    :param org_block: 1D original array from which sub-block will be extracted
+    :return: tuple of modified starting_index for next sub-block and 1D sub-block itself
     """
-    max_decomp = pywt.dwt_max_level(len(signal), wavelet_family)
-    assert max_decomp >= decomposition_level, \
-        f"Desired wavelet decomposition level is too high. Maximum level is {max_decomp}."
-    print("starting wavelet decomposition...")
-    # DWT on X
-    return pywt.wavedec(signal, wavelet_family, level=decomposition_level)
+    n = len(org_block)
+
+    # Cyclic Buffer index applied
+    current_start = starting_ind % n
+
+    # pre-allocate the output array
+    sub_block = np.empty(samples_to_add, dtype=org_block.dtype)
+
+    # fill the output array element-wise, modulo for cyclic access
+    for i in range(samples_to_add):
+        source_idx = (current_start + i) % n
+        sub_block[i] = org_block[source_idx]
+
+    # next starting index after samples_to_add
+    next_starting_ind = (current_start + samples_to_add) % n
+
+    return next_starting_ind, sub_block
+
+
+@njit(cache=True)
+def set_sub_block(starting_ind: int, samples_to_add: int, org_block: np.ndarray, new_block: np.ndarray) -> int:
+    """
+    Modifies original array with new sub-block according to starting_ind and samples_to_add applying Cyclic Buffer.
+    :param starting_ind: index of sample in original array where values from sub-block will be placed
+    :param samples_to_add: how many samples does sub-block have
+    :param org_block: original array to be modified by new sub-block
+    :param new_block: array of coefficients to modify org_block with
+    :return: modified starting_index for next sub-block
+    """
+    n = len(org_block)
+    current_start = starting_ind % n
+    end_ind = current_start + samples_to_add
+
+    # default, index not exceed
+    if end_ind <= n:
+        org_block[current_start:end_ind] = new_block
+        next_starting_ind = end_ind
+
+    # go with buffer to the start, index is exceed, firstly add leftovers
+    else:
+        # fit before the wrap
+        end_part_len = n - current_start
+        # to be placed at the beginning after wrapping
+        start_part_len = samples_to_add - end_part_len
+
+        # from current_start to the end
+        if end_part_len > 0:  # in case if current_start is n-1
+            org_block[current_start:] = new_block[:end_part_len]
+
+        # from the beginning to leftovers
+        if start_part_len > 0:
+            target_slice_at_start = org_block[:start_part_len]
+            source_slice_for_start = new_block[end_part_len: end_part_len + start_part_len]
+
+            org_block[:start_part_len] = (source_slice_for_start + target_slice_at_start) / 2.0
+
+        next_starting_ind = start_part_len
+    return next_starting_ind
+
+
+# TODO make for adjust compliance
+def generate_blocks_matrix(blocks_level: int, block_height: int, coefficients: np.ndarray) -> np.ndarray:
+    """
+    Generates blocks matrix at some level from root up to block_height from coefficients array (subtrees)
+    :param blocks_level: level at which blocks roots are
+    :param block_height: how big the single block (tree) is
+    :param coefficients: list of lists of wavelets coefficients at each levels
+    :return: matrix of sub-blocks where each row corresponds to a sub-block
+    """
+    n_blocks = len(coefficients[blocks_level])
+    blocks = [[] for _ in range(n_blocks)]
+    # CYCLIC BUFFER
+    for iter_n, i in enumerate(range(blocks_level, blocks_level + block_height)):
+        samples_to_add = 2 ** iter_n
+        starting_index = 0
+        counter = 0
+        while counter < n_blocks:
+            # go with buffer to the start, index not exceed
+            starting_index, temp_block = get_sub_block(starting_index, samples_to_add, coefficients[i])
+            blocks[counter].extend(temp_block)
+            counter += 1
+    return np.array(blocks)
+
+
+def generate_r_d(r_blocks_level: int, block_height: int, coefficients: np.ndarray) -> (np.ndarray, np.ndarray):
+    """
+    Based on the 'generate_blocks_matrix' function generates range blocks and domain blocks
+    :param r_blocks_level: level at which range blocks roots are. Domain blocks is at one level below
+    :param block_height: how big the single block (tree) is
+    :param coefficients: list of lists of wavelets coefficients at each levels
+    :return: two matrix of sub-blocks (subtrees), ranges and domains blocks
+    """
+    start_time_blocks = time.time()
+    print("starting generating blocks...")
+    r = generate_blocks_matrix(r_blocks_level, block_height, coefficients)
+    d = generate_blocks_matrix(r_blocks_level - 1, block_height, coefficients)
+    print(f"blocks generation finished with {round(time.time() - start_time_blocks, 2)}s.")
+    return r, d
 
 
 @njit
 def wavelet_ifs_transform(coefficients_base: np.ndarray, coded_blocks: tuple, r_blocks_level: int, block_height: int,
                           decoding_iter: int) -> np.ndarray:
     """
-    IFS decoding main functionalities extracted for numba compliance
+    IFS decoding main functionalities extracted from decode function for numba compliance
     :param coefficients_base: 2D nd array with wavelet coefficients on first few levels and noise on the rest
     :param coded_blocks: information for FWC decoding: (starting index of domain block, alpha parameter,
         beta parameter) for each range block
