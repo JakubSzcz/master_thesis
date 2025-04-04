@@ -17,13 +17,13 @@ def distance(x, y):
 
 
 @njit(cache=True)
-def calculate_alpha_beta(x, z):
+def calculate_alpha_beta(x, z, only_alpha: bool = False):
     """
     returns minimal value of alpha and beta for affine transformation
+    :param only_alpha: flag whether only alpha is returned
     :param x: Vector x from which affine transformation is applied -> DOMAIN
     :param z: Vector z to which affine transformation will lead -> RANGE
-    :return:
-    tuple: alpha and beta.
+    :return: tuple with alpha and beta parameters.
     """
     x = np.ascontiguousarray(x)
     z = np.ascontiguousarray(z)
@@ -38,6 +38,9 @@ def calculate_alpha_beta(x, z):
 
     # Calculate alpha
     alpha = (np.dot(y, z) * np.dot(x, y) - np.dot(y, y) * np.dot(x, z)) / denominator
+
+    if only_alpha:
+        return alpha, 0
 
     # Calculate beta
     beta = (np.dot(x, y) * np.dot(x, z) - np.dot(x, x) * np.dot(y, z)) / denominator
@@ -89,6 +92,14 @@ def calculate_mse(x, y):
 
 def calculate_rms(x, y):
     return np.sqrt(calculate_mse(x, y))
+
+
+def calculate_psnr(mse, max_sample_value=1.0):
+    if mse == 0:
+        return float('inf')
+
+    psnr = 10 * np.log10((max_sample_value ** 2) / mse)
+    return psnr
 
 
 def find_highest_frequency(signal_data, fs, threshold_ratio=0.1):

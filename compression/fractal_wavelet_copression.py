@@ -12,6 +12,7 @@ import util.math as mymath
 # TODO CUSTOM OVERLAPPING - as for now only Cyclic buffer supported
 # TODO disable logging parameter
 # TODO IFS on lower layers
+# TODO investigate other metric not only, L2 norm/dot product
 # TODO asynchronous encoding
 # TODO get/set sub_block_2d functions and test performance improvements
 class MatchingType(Enum):
@@ -129,15 +130,17 @@ def generate_r_d(r_blocks_level: int, block_height: int, coefficients: np.ndarra
 
 
 def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_height: int,
-                    matching_type: MatchingType = MatchingType.FAISS) -> (np.ndarray, np.ndarray):
+                    matching_type: MatchingType = MatchingType.FAISS, store_only_alpha: bool = False) -> (
+        np.ndarray, np.ndarray):
     """
     Performs fractal encoding of wavelets coefficients above some level of decomposition.
+    :param store_only_alpha: flag whether only alpha parameter is used while transforming blocks
     :param matching_type: what type of paring range to domain blocks to use [BRUTEFORCE, FAISS]
     :param wavelets_coefficients: list of lists of wavelets coefficients at each levels
     :param r_blocks_level: level at which range blocks roots are. Domain blocks is at one level below
     :param block_height: how big the single block (tree) is
     :return: Returns tuple with wavelet coefficients below provided level to be stored directly and information
-        for FWC decoding: (starting index of domain block, alpha parameter, beta parameter) for each range block
+        for FWC decoding: (starting index of domain block, alpha parameter, optional beta parameter) for each range block
     """
     start_time_enc = time.time()
     print("starting encoding...")
@@ -164,8 +167,11 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
             # progress logging
             if r_i % progress_incrementor == 0:
                 print(f"\rProgress: {round(r_i * 100 / n_range, 2)}%.", end="", flush=True)
-            fit_alpha, fit_beta = mymath.calculate_alpha_beta(d_matrix[d_index], r_matrix[r_i])
-            codded.append((d_index, fit_alpha, fit_beta))
+            fit_alpha, fit_beta = mymath.calculate_alpha_beta(d_matrix[d_index], r_matrix[r_i], store_only_alpha)
+            if store_only_alpha:
+                codded.append((d_index, fit_alpha))
+            else:
+                codded.append((d_index, fit_alpha, fit_beta))
             uniq_d.add(d_index)
         print("\rProgress: 100%.", flush=True)
         print(f"d used: {len(uniq_d)}/{n_domain}")
@@ -191,9 +197,10 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
 
 
 def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height: int, n_org_signal_samples: int,
-           decoding_iter: int = 10) -> np.ndarray:
+           decoding_iter: int = 10, store_only_alpha: bool = False) -> np.ndarray:
     """
     Performs decoding proces of wavelets coefficients above some level of decomposition by using IFS.
+    :param store_only_alpha: flag whether only alpha parameter is used while transforming blocks
     :param coded: tuple with wavelet coefficients below provided level stored directly and information
         for FWC decoding: (starting index of domain block, alpha parameter, beta parameter) for each range block
     :param wavelet_family: wavelet family used in decomposition process
@@ -206,6 +213,10 @@ def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height:
     print("starting decoding...")
     start_time_dec = time.time()
     to_be_stored, coded_blocks = coded
+    if store_only_alpha:
+        fit_beta = np.full((coded_blocks.shape[0], 1), 0)
+        coded_blocks = np.hstack((coded_blocks, fit_beta))
+
     # get lengths of coeffs on each levels
     n_coeffs_level = []
     temp = n_org_signal_samples

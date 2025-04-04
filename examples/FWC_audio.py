@@ -5,14 +5,15 @@ import util.common as common
 
 # PARAMETERS
 DECOMPOSITION_LEVEL = 6
-BLOCK_HEIGHT = 4
+BLOCK_HEIGHT = 3
 RANGE_BLOCKS_LEVEL = DECOMPOSITION_LEVEL - BLOCK_HEIGHT
-WAVELET_FAMILY = 'coif12'
-file_types = ("sound", "speech")
-file_type = file_types[0]
+WAVELET_FAMILY = 'db10'
+file_types = ("sound", "speech", "confutatis", "badinerie", "rondo-alla-turca")
+file_type = file_types[3]
 title_appendix = f"for {file_type} with {WAVELET_FAMILY}"
+STORES_ONLY_ALPHA = True
 
-n_samples = 2 ** 16
+n_samples = 2 ** 18
 
 # READING ORIGINAL SIGNAL
 original_signal, audio_samplerate = common.read_example_file(n_samples=n_samples, file_type=file_type)
@@ -22,10 +23,10 @@ wavelet_coefficients = fwc.wavelet_decomposition(original_signal, WAVELET_FAMILY
 
 # ENCODING
 # codded_data = (to_be_stored, coded_blocks)
-codded_data = fwc.encode_wavelets(wavelet_coefficients, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT)
+codded_data = fwc.encode_wavelets(wavelet_coefficients, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT, store_only_alpha=STORES_ONLY_ALPHA)
 
 # DECODING
-decoded_signal = fwc.decode(codded_data, WAVELET_FAMILY, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT, n_samples)
+decoded_signal = fwc.decode(codded_data, WAVELET_FAMILY, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT, n_samples, store_only_alpha=STORES_ONLY_ALPHA)
 
 # PRINTING
 common.print_signal(original_signal, "original signal")

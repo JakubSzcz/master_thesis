@@ -34,9 +34,19 @@ def print_attr_vs_orig(attractor: list | np.ndarray, original: list | np.ndarray
     plt.ylabel("Value")
     plt.legend()
     plt.show()
+    print_mesures(attractor, original)
 
-    print(f"Euclidian distance = {mymath.distance(np.array(attractor), original)}")
-    print(f"MSE = {mymath.calculate_mse(attractor, original)}")
+
+def print_mesures(reconstructed_signal: np.ndarray, original_signal: np.ndarray):
+    """
+    Prints mesures: L2 norm, Mean Square Error, Peak Signal to Noise Ratio
+    :param reconstructed_signal: signal after reconstruction
+    :param original_signal: original signal
+    """
+    mse = mymath.calculate_mse(reconstructed_signal, original_signal)
+    print(f"Euclidian distance = {mymath.distance(np.array(reconstructed_signal), original_signal)}")
+    print(f"MSE = {mse}")
+    print(f"PSNR = {round(mymath.calculate_psnr(mse), 3)} dB")
 
 
 def print_signal(signal: list | np.ndarray, title: str, plot_ranges_size: int = None, title_appendix: str = None):
@@ -71,6 +81,12 @@ def read_example_file(n_samples: int = 2 ** 12, samples_offset: int = 100000, fi
     """
     if file_type == "sound":
         file = "../resources/sound.wav"
+    elif file_type == "confutatis":
+        file = "../resources/confutatis.wav"
+    elif file_type == "rondo-alla-turca":
+        file = "../resources/rondo-alla-turca.wav"
+    elif file_type == "badinerie":
+        file = "../resources/badinerie.wav"
     else:
         file = "../resources/en_speech.wav"
     audio_meta_data, signal = read_wav_file(file)
