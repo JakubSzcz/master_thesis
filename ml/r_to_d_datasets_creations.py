@@ -1,7 +1,7 @@
 import time
 import pandas as pd
 
-import compression.fractal_wavelet_copression as fwc
+import compression.fractal_wavelet_compression_core as fwc
 import util.math as mymath
 from util.matching import brute_force_r_to_d_matching
 from util.wavFile import read_wav_file

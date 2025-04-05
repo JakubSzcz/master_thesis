@@ -1,20 +1,19 @@
-import compression.fractal_wavelet_copression as fwc
+import compression.fractal_wavelet_compression_core as fwc
 import numpy as np
 import sounddevice as sd
 import util.common as common
 
 # PARAMETERS
 DECOMPOSITION_LEVEL = 6
-BLOCK_HEIGHT = 3
+BLOCK_HEIGHT = 2
 RANGE_BLOCKS_LEVEL = DECOMPOSITION_LEVEL - BLOCK_HEIGHT
-WAVELET_FAMILY = 'db10'
+WAVELET_FAMILY = 'coif10'
 file_types = ("sound", "speech", "confutatis", "badinerie", "rondo-alla-turca")
-file_type = file_types[3]
+file_type = file_types[-1]
 title_appendix = f"for {file_type} with {WAVELET_FAMILY}"
 STORES_ONLY_ALPHA = False
 
-n_samples = 2 ** 18
-
+n_samples = 2 ** 16
 # READING ORIGINAL SIGNAL
 original_signal, audio_samplerate = common.read_example_file(n_samples=n_samples, file_type=file_type)
 

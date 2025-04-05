@@ -22,9 +22,11 @@ class MatchingType(Enum):
 
 ### CORE FUNCTIONS ###
 
-def wavelet_decomposition(signal: np.ndarray, wavelet_family: str, decomposition_level: int) -> list:
+def wavelet_decomposition(signal: np.ndarray, wavelet_family: str, decomposition_level: int,
+                          suppress_logs: bool = False) -> list:
     """
     Performs wavelet decomposition proces on original signal at provided level of decomposition
+    :param suppress_logs: stop printing logs
     :param signal: original signal to be decomposed
     :param wavelet_family: wavelet family used in decomposition process
     :param decomposition_level: how deep wavelet decomposition should be
@@ -33,16 +35,19 @@ def wavelet_decomposition(signal: np.ndarray, wavelet_family: str, decomposition
     max_decomp = pywt.dwt_max_level(len(signal), wavelet_family)
     assert max_decomp >= decomposition_level, \
         f"Desired wavelet decomposition level is too high. Maximum level is {max_decomp}."
-    print("starting wavelet decomposition...")
+    if not suppress_logs:
+        print("starting wavelet decomposition...")
     # DWT on X
     return pywt.wavedec(signal, wavelet_family, level=decomposition_level)
 
 
 def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_height: int,
-                    matching_type: MatchingType = MatchingType.FAISS, store_only_alpha: bool = False) -> (
+                    matching_type: MatchingType = MatchingType.FAISS, store_only_alpha: bool = False,
+                    suppress_logs: bool = False) -> (
         np.ndarray, np.ndarray):
     """
     Performs fractal encoding of wavelets coefficients above some level of decomposition.
+    :param suppress_logs: stop printing logs
     :param store_only_alpha: flag whether only alpha parameter is used while transforming blocks
     :param matching_type: what type of paring range to domain blocks to use [BRUTEFORCE, FAISS]
     :param wavelets_coefficients: list of lists of wavelets coefficients at each levels
@@ -52,12 +57,13 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
         for FWC decoding: (starting index of domain block, alpha parameter, optional beta parameter) for each range block
     """
     start_time_enc = time.time()
-    print("starting encoding...")
+    if not suppress_logs:
+        print("starting encoding...")
 
     # prepare blocks
     a_coeffs = wavelets_coefficients[1:]
     coeffs_to_be_stored = wavelets_coefficients[:r_blocks_level + 1]
-    r_matrix, d_matrix = generate_r_d(r_blocks_level, block_height, a_coeffs)
+    r_matrix, d_matrix = generate_r_d(r_blocks_level, block_height, a_coeffs, suppress_logs=suppress_logs)
 
     n_range, dim = r_matrix.shape
     n_domain, _ = d_matrix.shape
@@ -74,7 +80,7 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
         for r_i, best_matched in enumerate(best_matches_indices):
             d_index = best_matched[0]
             # progress logging
-            if r_i % progress_incrementor == 0:
+            if r_i % progress_incrementor == 0 and not suppress_logs:
                 print(f"\rProgress: {round(r_i * 100 / n_range, 2)}%.", end="", flush=True)
             fit_alpha, fit_beta = mymath.calculate_alpha_beta(d_matrix[d_index], r_matrix[r_i], store_only_alpha)
             if store_only_alpha:
@@ -82,33 +88,36 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
             else:
                 codded.append((d_index, fit_alpha, fit_beta))
             uniq_d.add(d_index)
-        print("\rProgress: 100%.", flush=True)
-        print(f"d used: {len(uniq_d)}/{n_domain}")
-        print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s.")
+        if not suppress_logs:
+            print("\rProgress: 100%.", flush=True)
+            print(f"d used: {len(uniq_d)}/{n_domain}")
+            print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s.")
 
     # BRUTEFORCE TYPE
     # encoded parameters for each range block
     if matching_type == MatchingType.BRUTE_FORCE:
         for r_i, r in enumerate(r_matrix):
             # progress logging
-            if r_i % progress_incrementor == 0:
+            if r_i % progress_incrementor == 0 and not suppress_logs:
                 print(f"\rProgress: {round(r_i * 100 / n_range, 2)}%.", end="", flush=True)
 
             # find best match
             d_index, fit_alpha, fit_beta = brute_force_r_to_d_matching(r, d_matrix)
             codded.append((d_index, fit_alpha, fit_beta))
             uniq_d.add(d_index)
-        print("\rProgress: 100%.", flush=True)
-        print(f"d used: {len(uniq_d)}/{n_domain}")
-        print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s.")
+        if not suppress_logs:
+            print("\rProgress: 100%.", flush=True)
+            print(f"d used: {len(uniq_d)}/{n_domain}")
+            print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s.")
 
     return coeffs_to_be_stored, np.array(codded)
 
 
 def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height: int, n_org_signal_samples: int,
-           decoding_iter: int = 10) -> np.ndarray:
+           decoding_iter: int = 10, suppress_logs: bool = False) -> np.ndarray:
     """
     Performs decoding proces of wavelets coefficients above some level of decomposition by using IFS.
+    :param suppress_logs: stop printing logs
     :param coded: tuple with wavelet coefficients below provided level stored directly and information
         for FWC decoding: (starting index of domain block, alpha parameter, beta parameter) for each range block
     :param wavelet_family: wavelet family used in decomposition process
@@ -118,7 +127,8 @@ def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height:
     :param decoding_iter: number of iterations for IFS decoding
     :return: reconstructed decoded signal
     """
-    print("starting decoding...")
+    if not suppress_logs:
+        print("starting decoding...")
     start_time_dec = time.time()
     to_be_stored, coded_blocks = coded
     if len(coded_blocks[0]) == 2:
@@ -142,7 +152,8 @@ def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height:
     decoded = wavelet_ifs_transform(decoded, coded_blocks, r_blocks_level, block_height, decoding_iter)
 
     reconstructed_signal = pywt.waverec(decoded, wavelet_family)
-    print(f"decoding finished with {round(time.time() - start_time_dec, 2)}s.")
+    if not suppress_logs:
+        print(f"decoding finished with {round(time.time() - start_time_dec, 2)}s.")
     return np.array(reconstructed_signal)
 
 
@@ -243,19 +254,23 @@ def generate_blocks_matrix(blocks_level: int, block_height: int, coefficients: n
     return np.array(blocks)
 
 
-def generate_r_d(r_blocks_level: int, block_height: int, coefficients: np.ndarray) -> (np.ndarray, np.ndarray):
+def generate_r_d(r_blocks_level: int, block_height: int, coefficients: np.ndarray, suppress_logs: bool = False) -> (
+        np.ndarray, np.ndarray):
     """
     Based on the 'generate_blocks_matrix' function generates range blocks and domain blocks
+    :param suppress_logs: stop printing logs
     :param r_blocks_level: level at which range blocks roots are. Domain blocks is at one level below
     :param block_height: how big the single block (tree) is
     :param coefficients: list of lists of wavelets coefficients at each levels
     :return: two matrix of sub-blocks (subtrees), ranges and domains blocks
     """
     start_time_blocks = time.time()
-    print("starting generating blocks...")
+    if not suppress_logs:
+        print("starting generating blocks...")
     r = generate_blocks_matrix(r_blocks_level, block_height, coefficients)
     d = generate_blocks_matrix(r_blocks_level - 1, block_height, coefficients)
-    print(f"blocks generation finished with {round(time.time() - start_time_blocks, 2)}s.")
+    if not suppress_logs:
+        print(f"blocks generation finished with {round(time.time() - start_time_blocks, 2)}s.")
     return r, d
 
 

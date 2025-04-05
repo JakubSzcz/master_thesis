@@ -1,5 +1,5 @@
 import numpy as np
-import compression.fractal_wavelet_copression as fwc
+import compression.fractal_wavelet_compression_core as fwc
 import util.common as common
 
 # PARAMETERS
