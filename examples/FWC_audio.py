@@ -9,7 +9,7 @@ BLOCK_HEIGHT = 2
 RANGE_BLOCKS_LEVEL = DECOMPOSITION_LEVEL - BLOCK_HEIGHT
 WAVELET_FAMILY = 'coif10'
 file_types = ("sound", "speech", "confutatis", "badinerie", "rondo-alla-turca")
-file_type = file_types[-1]
+file_type = file_types[1]
 title_appendix = f"for {file_type} with {WAVELET_FAMILY}"
 STORES_ONLY_ALPHA = False
 
