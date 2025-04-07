@@ -13,7 +13,13 @@ from util.wavFile import read_wav_file
 import util.math as mymath
 
 
-def feature_extractor(signal, metadata):
+def feature_extractor(signal: np.ndarray, metadata: dict) -> dict:
+    """
+    Extracts statistical data from whole signal frame
+    :param signal: 1d array with signal samples
+    :param metadata: signal metadata ("fs")
+    :return: dictionary with extracted statistics
+    """
     # time based
     n_samples = len(signal)
     signal = np.array(signal)
@@ -57,13 +63,29 @@ def feature_extractor(signal, metadata):
 
 @njit
 def split_into_frames(signal: np.ndarray) -> list:
+    """
+    Splits long singal into frames
+    :param signal: 1d array with signal samples
+    :return: list of separated frames from signal of size equals to FRAME_SIZE
+    """
     FRAME_SIZE = 2 ** 15
     if len(signal) < FRAME_SIZE:
         return [signal]
     else:
         return [signal[i: i + FRAME_SIZE] for i in range(0, len(signal), FRAME_SIZE)]
 
-def find_best_wavelet_per_frame(frame, wavelets, dl, rbl, bh, frame_ind):
+
+def find_best_wavelet_per_frame(frame: np.ndarray, wavelets: list, dl: int, rbl: int, bh: int, frame_ind: int) -> str:
+    """
+    Finds best (highest PSNR) wavelet per frame
+    :param frame: 1D array with frame samples
+    :param wavelets: list of wavelets functions to test
+    :param dl: decomposition level number
+    :param rbl: range block level at which range blocks are
+    :param bh: block height indicating how many levels are taking into IFS proces
+    :param frame_ind: index of frame to be tested, for loggining
+    :return: the best wavelet for provided frame
+    """
     print(f"Finding best wavelet for frame {frame_ind}...")
     max_psnr = -10000
     best_wavelet = None
@@ -82,17 +104,27 @@ def find_best_wavelet_per_frame(frame, wavelets, dl, rbl, bh, frame_ind):
     return best_wavelet
 
 
-def process_frame(frame, frame_ind, metadata, wavelets, dl, rbl, bh):
-
-    # Skip empty frames
+def process_frame(frame: np.ndarray, frame_ind: int, metadata: dict, wavelets: list, dl: int, rbl: int,
+                  bh: int) -> dict | None:
+    """
+    Processes frame for finding the best wavelet to calculated features - made for parallel processing
+    :param metadata: signal metadata ("fs")
+    :param frame: 1D array with frame samples
+    :param wavelets: list of wavelets functions to test
+    :param dl: decomposition level number
+    :param rbl: range block level at which range blocks are
+    :param bh: block height indicating how many levels are taking into IFS proces
+    :param frame_ind: index of frame to be tested, for loggining
+    :return: dictionary with extracted statistics with the best possible wavelet
+    """
+    # skip empty frames
     if np.all(frame == 0):
         print(f"Frame {frame_ind} skipped (all samples == 0).")
         return None
 
-    # Extract features
     features = feature_extractor(frame, metadata)
 
-    # Find best wavelet
+    # find best wavelet
     try:
         best_wavelet = find_best_wavelet_per_frame(frame, wavelets, dl, rbl, bh, frame_ind)
         features["wavelet"] = best_wavelet
@@ -105,14 +137,25 @@ def process_frame(frame, frame_ind, metadata, wavelets, dl, rbl, bh):
         return None
 
 
-def process_channel(channel, channel_ind, metadata, total_channels, wavelets, dl, rbl, bh):
-    # channel, channel_ind, metadata, total_channels, wavelets, dl, rbl, bh = channel_data
-
+def process_channel(channel: np.ndarray, channel_ind: int, metadata: dict, total_channels: int, wavelets: list, dl: int,
+                    rbl: int, bh: int) -> list:
+    """
+    Processing single channel for finding the best wavelet to calculated features - parallel processing implementation
+    :param channel: single channel from .wav file containing samples
+    :param channel_ind: index of channel
+    :param metadata: signal metadata ("fs")
+    :param total_channels: how many channels in original .wav file
+    :param wavelets: list of wavelets functions to test
+    :param dl: decomposition level number
+    :param rbl: range block level at which range blocks are
+    :param bh: block height indicating how many levels are taking into IFS proces
+    :return: list of extracted statistics with the best possible wavelet per frame extracted from original channel
+    """
     print(f"Processing channel {channel_ind + 1}/{total_channels}...")
     channel = np.trim_zeros(channel, "fb")
     frames = split_into_frames(channel)
 
-    # Create a partial function with fixed parameters
+    # create a partial function with fixed parameters
     process_frame_partial = functools.partial(
         process_frame,
         metadata=metadata,
@@ -122,7 +165,7 @@ def process_channel(channel, channel_ind, metadata, total_channels, wavelets, dl
         bh=bh
     )
 
-    # Process frames in parallel using ProcessPoolExecutor
+    # process frames in parallel
     results = []
     with ProcessPoolExecutor(max_workers=mp.cpu_count()) as executor:
         futures = [executor.submit(process_frame_partial, frame, i) for i, frame in enumerate(frames)]
@@ -130,14 +173,20 @@ def process_channel(channel, channel_ind, metadata, total_channels, wavelets, dl
             result = future.result()
             if result is not None:
                 results.append(result)
+
     print(f"Finished processing channel {channel_ind + 1}/{total_channels}.")
     return results
 
 
-def create_dataset(files):
-    DECOMPOSITION_LEVEL = 3
-    BLOCK_HEIGHT = 2
-    RANGE_BLOCKS_LEVEL = DECOMPOSITION_LEVEL - BLOCK_HEIGHT
+def create_dataset(files: list):
+    """
+    Extract staitstical features from all .wav files (per each channel/frame of FRAME_SIZE)
+    and calculate the wavelets which yields best PSNR while compressing
+    :param files: list of .wav files to be processed
+    """
+    decomposition_level = 3
+    block_height = 2
+    range_blocks_level = decomposition_level - block_height
     wavelets = ['bior1.1', 'bior1.3', 'bior1.5', 'bior4.4', 'bior5.5', 'bior6.8', 'coif1', 'coif2', 'coif11', 'coif12',
                 'coif13', 'coif14', 'coif15', 'coif16', 'coif17', 'db1', 'db2', 'db3', 'db4', 'db5', 'db15', 'db16',
                 'db17', 'db18', 'db19', 'db20', 'db21', 'db22', 'db23', 'db24', 'db25', 'db26', 'db27', 'db28', 'db29',
@@ -149,21 +198,11 @@ def create_dataset(files):
         file_results = []
         print(f"Processing {file}...")
         metadata, channels = read_wav_file("../resources/" + file)
-        #
-        # # Prepare data for parallel processing
-        # channel_data = [
-        #     (channel, i, metadata, len(channels), wavelets, DECOMPOSITION_LEVEL, RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT)
-        #     for i, channel in enumerate(channels)
-        # ]
-        #
-        # # Process channels in parallel
-        # with ProcessPoolExecutor(max_workers=mp.cpu_count()) as executor:
-        #     channel_results = list(executor.map(process_channel, channel_data))
 
         for channel_ind, channel in enumerate(channels):
             file_results.extend(
-                process_channel(channel, channel_ind, metadata, len(channels), wavelets, DECOMPOSITION_LEVEL,
-                                RANGE_BLOCKS_LEVEL, BLOCK_HEIGHT))
+                process_channel(channel, channel_ind, metadata, len(channels), wavelets, decomposition_level,
+                                range_blocks_level, block_height))
 
         # Create and save DataFrame
         if file_results:
@@ -177,11 +216,8 @@ def create_dataset(files):
             print("No valid frames were processed.")
 
 
-if __name__ == "__main__":
-    # Replace with your file list
-    folder_path = '../resources/'
-    folder_save_path = '../ml/datasets/best_wavelet'
+folder_path = '../resources/'
+folder_save_path = '../ml/datasets/best_wavelet'
 
-    # List only files
-    files = [f for f in os.listdir(folder_path)]
-    create_dataset(files)
+files = [f for f in os.listdir(folder_path)]
+create_dataset(files)
