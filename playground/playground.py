@@ -1,38 +1,30 @@
-import pywt
+import numpy as np
+import matplotlib.pyplot as plt
 
-from util.wavFile import read_wav_file
+fs = 44100
+t_step = 1/fs
+f0 = 100
+f1 = 400
 
-n = 10
-n_samples = 2 ** n  # samples in base signal
-wave_offset = 10000
-# n_samples = 100
+t = np.arange(0, 0.01, t_step)
+y = np.sin(2*np.pi*f0*t) + np.sin(2*np.pi*f1*t)
 
-# generating base image
-# file = "../resources/sound.wav"
-file = "../resources/en_speech.wav"
-audio_meta_data, X = read_wav_file(file)
-audio_samplerate = audio_meta_data["fs"]
-X = X[0][wave_offset:n_samples + wave_offset]
-# print(pywt.wavelist())
-wavelet_family = "db2"
-wave = pywt.Wavelet(wavelet_family).dec_len
+plt.plot(t, y)
+plt.show()
 
-DECOMP_LEVEL = 4
+fft_original = np.fft.fft(y)
+freq_original = np.fft.fftfreq(len(y), d=1/fs)
 
-wave_coeff_pyramid = pywt.wavedec(X, wavelet_family,
-                                  level=DECOMP_LEVEL, mode="symmetric")
+idx = freq_original >= 0
+X_mag = np.abs(fft_original[idx]) * 2 / len(y)   # Normalize magnitude
+freqs_pos = freq_original[idx]
+print(len(y))
+print(len(freqs_pos))
 
-test = [i for i in range(1, 11)]
-
-
-def modify(test_array, start_ind):
-    for i in range(start_ind, len(test_array)):
-        test_array[i] = test_array[i] ** 2
-    return test_array
-
-
-print(f"przed {test}")
-modify(test, 5)
-print(f"po {test}")
-# for level in wave_coeff_pyramid:
-#     print(len(level))
+plt.figure(figsize=(10, 4))
+plt.plot(freqs_pos, X_mag)
+plt.title('Magnitude Spectrum')
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Magnitude')
+plt.grid(True)
+plt.show()

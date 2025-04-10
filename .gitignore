@@ -185,4 +185,5 @@ fabric.properties
 
 # my gitignore
 /resources/*
-/ml/datasets/*.csv
+/ml/datasets/best_wavelet/*
+/ml/datasets/best_wavelet_v2/*
