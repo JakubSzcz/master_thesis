@@ -10,7 +10,6 @@ import util.math as mymath
 
 
 # TODO CUSTOM OVERLAPPING - as for now only Cyclic buffer supported
-# TODO disable logging parameter
 # TODO IFS on lower layers
 # TODO investigate other metric not only, L2 norm/dot product
 # TODO asynchronous encoding
@@ -36,7 +35,7 @@ def wavelet_decomposition(signal: np.ndarray, wavelet_family: str, decomposition
     assert max_decomp >= decomposition_level, \
         f"Desired wavelet decomposition level is too high. Maximum level is {max_decomp}."
     if not suppress_logs:
-        print("starting wavelet decomposition...")
+        print("Starting wavelet decomposition...")
     # DWT on X
     return pywt.wavedec(signal, wavelet_family, level=decomposition_level)
 
@@ -58,7 +57,7 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
     """
     start_time_enc = time.time()
     if not suppress_logs:
-        print("starting encoding...")
+        print("Starting encoding...")
 
     # prepare blocks
     a_coeffs = wavelets_coefficients[1:]
@@ -90,8 +89,8 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
             uniq_d.add(d_index)
         if not suppress_logs:
             print("\rProgress: 100%.", flush=True)
-            print(f"d used: {len(uniq_d)}/{n_domain}")
-            print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s.")
+            print(f"Unique d used: {len(uniq_d)}/{n_domain}")
+            print(f"Encoding finished with {round(time.time() - start_time_enc, 2)}s.")
 
     # BRUTEFORCE TYPE
     # encoded parameters for each range block
@@ -107,8 +106,8 @@ def encode_wavelets(wavelets_coefficients: list, r_blocks_level: int, block_heig
             uniq_d.add(d_index)
         if not suppress_logs:
             print("\rProgress: 100%.", flush=True)
-            print(f"d used: {len(uniq_d)}/{n_domain}")
-            print(f"encoding finished with {round(time.time() - start_time_enc, 2)}s.")
+            print(f"Unique d used: {len(uniq_d)}/{n_domain}")
+            print(f"Encoding finished with {round(time.time() - start_time_enc, 2)}s.")
 
     return coeffs_to_be_stored, np.array(codded)
 
@@ -128,7 +127,7 @@ def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height:
     :return: reconstructed decoded signal
     """
     if not suppress_logs:
-        print("starting decoding...")
+        print("Starting decoding...")
     start_time_dec = time.time()
     to_be_stored, coded_blocks = coded
     if len(coded_blocks[0]) == 2:
@@ -153,7 +152,7 @@ def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height:
 
     reconstructed_signal = pywt.waverec(decoded, wavelet_family)
     if not suppress_logs:
-        print(f"decoding finished with {round(time.time() - start_time_dec, 2)}s.")
+        print(f"Decoding finished with {round(time.time() - start_time_dec, 2)}s.")
     return np.array(reconstructed_signal)
 
 
@@ -230,7 +229,6 @@ def set_sub_block(starting_ind: int, samples_to_add: int, org_block: np.ndarray,
     return next_starting_ind
 
 
-# TODO make for adjust compliance
 def generate_blocks_matrix(blocks_level: int, block_height: int, coefficients: np.ndarray) -> np.ndarray:
     """
     Generates blocks matrix at some level from root up to block_height from coefficients array (subtrees)
@@ -266,11 +264,11 @@ def generate_r_d(r_blocks_level: int, block_height: int, coefficients: np.ndarra
     """
     start_time_blocks = time.time()
     if not suppress_logs:
-        print("starting generating blocks...")
+        print("Starting generating blocks...")
     r = generate_blocks_matrix(r_blocks_level, block_height, coefficients)
     d = generate_blocks_matrix(r_blocks_level - 1, block_height, coefficients)
     if not suppress_logs:
-        print(f"blocks generation finished with {round(time.time() - start_time_blocks, 2)}s.")
+        print(f"Blocks generation finished with {round(time.time() - start_time_blocks, 2)}s.")
     return r, d
 
 

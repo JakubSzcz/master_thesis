@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pywt
+
 import util.math as mymath
 from util.wavFile import read_wav_file
 
@@ -49,6 +51,42 @@ def print_mesures(reconstructed_signal: np.ndarray, original_signal: np.ndarray)
     print(f"PSNR = {round(mymath.calculate_psnr(mse), 3)} dB")
 
 
+def get_compression_rate(n_samples: int, block_height: int, wavelet_family: str, stores_only_alpha: bool = False,
+                         bit_wise: bool = True, bit_depth: int = 16):
+    """
+    Prints compression rate
+    :param n_samples: number of samples in original signal
+    :param block_height: how many wavelet decomposition levels are to be encoded
+    :param wavelet_family: family of wavelets e.g. db10
+    :param stores_only_alpha: if only alpha parameter of affine transforms were saved
+    :param bit_wise: flag indicating to consider compression rate in bytes, not samples numbers
+    :param bit_depth: how many bits per single sample were used in original signal
+    :return: calculated compression rate
+    """
+
+    filter_len = pywt.Wavelet(wavelet_family).dec_len
+    n_ifs_parameters = n_samples
+    for i in range(1, block_height + 1):
+        n_ifs_parameters = (n_ifs_parameters + filter_len - 1) // 2
+
+    coefficients_to_be_stored = (n_ifs_parameters + filter_len - 1) // 2 * 2
+
+    n_ifs_parameters = n_ifs_parameters * 2 if stores_only_alpha else n_ifs_parameters * 3
+    # TODO consider storing floats on 32 bits not 64
+    # assuming float -> 64 bits
+    float_bits_size = 64
+    if bit_wise:
+        n_samples *= bit_depth * 8
+        coefficients_to_be_stored *= float_bits_size
+        n_ifs_parameters *= float_bits_size
+    compression_rate = n_samples / (n_ifs_parameters + coefficients_to_be_stored)
+    to_print = f"Compression rate = {round(compression_rate, 3)}"
+    if bit_wise:
+        to_print += " (bit wise)"
+    print(to_print)
+    return compression_rate
+
+
 def print_signal(signal: list | np.ndarray, title: str, plot_ranges_size: int = None, title_appendix: str = None):
     """
     Prints single signal.
@@ -91,9 +129,11 @@ def read_example_file(n_samples: int = 2 ** 12, samples_offset: int = 100000, fi
         file = "../resources/en_speech.wav"
     audio_meta_data, signal = read_wav_file(file)
     audio_samplerate = audio_meta_data["fs"]
+    bit_depth = audio_meta_data["byteDepth"]
     # reads only one channel with offset
     signal = signal[0][samples_offset:n_samples + samples_offset]
 
-    print(f"Audio parameters: fs = {audio_samplerate}, samples = {n_samples}, "
-          f"duration = {round((1 / audio_samplerate) * n_samples, 2)}s.")
-    return signal, audio_samplerate
+    print(
+        f"Audio parameters: fs = {audio_samplerate}Hz, samples = {n_samples}, bit depth = {8 * bit_depth}bits/sample, "
+        f"duration = {round((1 / audio_samplerate) * n_samples, 2)}s.")
+    return signal, audio_samplerate, bit_depth
