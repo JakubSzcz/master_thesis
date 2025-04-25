@@ -4,16 +4,16 @@ import sounddevice as sd
 import util.common as common
 
 # PARAMETERS
-DECOMPOSITION_LEVEL = 6
-BLOCK_HEIGHT = 4
+DECOMPOSITION_LEVEL = 5
+BLOCK_HEIGHT = 3
 RANGE_BLOCKS_LEVEL = DECOMPOSITION_LEVEL - BLOCK_HEIGHT
-WAVELET_FAMILY = 'coif17'
+WAVELET_FAMILY = 'db26'
 file_types = ("sound", "speech", "confutatis", "badinerie", "rondo-alla-turca")
-file_type = file_types[-1]
+file_type = file_types[2]
 title_appendix = f"for {file_type} with {WAVELET_FAMILY}"
 STORES_ONLY_ALPHA = False
 
-n_samples = 2 ** 18
+n_samples = 2 ** 11
 # READING ORIGINAL SIGNAL
 original_signal, audio_samplerate, bit_depth = common.read_example_file(n_samples=n_samples, file_type=file_type)
 

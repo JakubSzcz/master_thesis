@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import scipy.signal as signal
 from numba import njit
 
@@ -140,3 +141,21 @@ def butter_lowpass_filter(data, cutoff, fs, order=4):
     b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)  # Butterworth filter
     filtered_signal = signal.filtfilt(b, a, data)  # Apply filter with zero-phase
     return filtered_signal
+
+def remove_outliers_df(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """
+    removes outliers from pandas dataframe using IQR method
+    :param df: base dataframe
+    :param column: column on which proces should be performed
+    :return: filtered dataframe
+    """
+    df_col = df.copy()
+    # Remove outliers using IQR
+    Q1 = df_col[column].quantile(0.25)
+    Q3 = df_col[column].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+
+    df_filtered = df_col[(df_col[column] >= lower_bound) & (df_col[column] <= upper_bound)]
+    return df_filtered

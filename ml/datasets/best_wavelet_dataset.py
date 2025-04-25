@@ -13,12 +13,12 @@ import util.math as mymath
 
 def feature_extractor(signal: np.ndarray, metadata: dict) -> dict:
     """
-    Extracts statistical data from whole signal frame
+    Extracts statistical data from the whole signal frame
     :param signal: 1d array with signal samples
     :param metadata: signal metadata ("fs")
     :return: dictionary with extracted statistics
     """
-    # time based
+    # time-based
     signal = np.array(signal)
     mean = np.mean(signal)
     variance = np.var(signal)
@@ -41,12 +41,12 @@ def feature_extractor(signal: np.ndarray, metadata: dict) -> dict:
 
 def feature_extractor_v2(signal: np.ndarray, metadata: dict) -> dict:
     """
-    Extracts frequency domain from whole signal frame
+    Extracts frequency domain from the whole signal frame
     :param signal: 1d array with signal samples
     :param metadata: signal metadata ("fs")
     :return: dictionary with extracted statistics
     """
-    # time based
+    # time-based
     fs = metadata["fs"]
 
     signal = np.array(signal)
@@ -64,8 +64,8 @@ def feature_extractor_v2(signal: np.ndarray, metadata: dict) -> dict:
 def split_into_frames(signal: np.ndarray, frame_size: int) -> list:
     """
     Splits long signal into frames, pad with zeros, if cannot be split equally
-    :param frame_size: size of frame to be processed
-    :param signal: 1d array with signal samples
+    :param frame_size:  the size of frame to be processed
+    :param signal: 1d array with a signal samples
     :return: list of separated frames from signal of size equals to FRAME_SIZE
     """
     if len(signal) < frame_size:
@@ -125,7 +125,6 @@ def process_frame(frame: np.ndarray, frame_ind: int, metadata: dict, wavelets: l
         return None
 
     features = feature_extractor(frame, metadata)
-    # features = feature_extractor_v2(frame, metadata)
 
     # find best wavelet
     try:
