@@ -11,7 +11,7 @@ from sklearn.tree import DecisionTreeClassifier
 def random_forest_classifier(x_train, x_test, y_train, y_test, print_report: bool = False):
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
-        ('rf', RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42))
+        ('rf', RandomForestClassifier(n_estimators=50, class_weight='balanced', random_state=42, max_depth=3))
     ])
 
     # evaluate model
@@ -63,9 +63,9 @@ def mlp_classifier(x_train, x_test, y_train, y_test, print_report: bool = False)
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
         ('mlp', MLPClassifier(
-            hidden_layer_sizes=(100, 4),
+            hidden_layer_sizes=(10, 2),
             max_iter=200,
-            alpha=0.01,
+            alpha=0.001,
             random_state=42,
             early_stopping=True,
             activation="relu"
@@ -82,7 +82,7 @@ def mlp_classifier(x_train, x_test, y_train, y_test, print_report: bool = False)
 
 
 def decision_tree_classifier(x_train, x_test, y_train, y_test, print_report: bool = False):
-    # Encode string labels into integers
+
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
         ('dtc', DecisionTreeClassifier(random_state=42))

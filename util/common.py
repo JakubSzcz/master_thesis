@@ -46,9 +46,12 @@ def print_mesures(reconstructed_signal: np.ndarray, original_signal: np.ndarray)
     :param original_signal: original signal
     """
     mse = mymath.calculate_mse(reconstructed_signal, original_signal)
-    print(f"Euclidian distance = {mymath.distance(np.array(reconstructed_signal), original_signal)}")
+    euclidian_distance = mymath.distance(np.array(reconstructed_signal), original_signal)
+    psnr = mymath.calculate_psnr(mse)
+    print(f"Euclidian distance = {euclidian_distance}")
     print(f"MSE = {mse}")
-    print(f"PSNR = {round(mymath.calculate_psnr(mse), 3)} dB")
+    print(f"PSNR = {round(psnr, 3)} dB")
+    return mse, psnr
 
 
 def get_compression_rate(n_samples: int, block_height: int, wavelet_family: str, stores_only_alpha: bool = False,
@@ -109,9 +112,11 @@ def print_signal(signal: list | np.ndarray, title: str, plot_ranges_size: int = 
     plt.show()
 
 
-def read_example_file(n_samples: int = 2 ** 12, samples_offset: int = 100000, file_type: str = "sound"):
+def read_example_file(n_samples: int = 2 ** 12, samples_offset: int = 100000, file_type: str = "sound",
+                      suppress_logs: bool = True):
     """
     Shortcut function for reading example audio files.
+    :param suppress_logs: stop printing logs
     :param n_samples: how many samples to read (default 2 ** 12)
     :param samples_offset: how many samples to skip/shift (default 100000)
     :param file_type: type of audio file to read (default "sound")
@@ -133,7 +138,8 @@ def read_example_file(n_samples: int = 2 ** 12, samples_offset: int = 100000, fi
     # reads only one channel with offset
     signal = signal[0][samples_offset:n_samples + samples_offset]
 
-    print(
-        f"Audio parameters: fs = {audio_samplerate}Hz, samples = {n_samples}, bit depth = {8 * bit_depth}bits/sample, "
-        f"duration = {round((1 / audio_samplerate) * n_samples, 2)}s.")
+    if not suppress_logs:
+        print(
+            f"Audio parameters: fs = {audio_samplerate}Hz, samples = {n_samples}, bit depth = {8 * bit_depth}bits/sample, "
+            f"duration = {round((1 / audio_samplerate) * n_samples, 2)}s.")
     return signal, audio_samplerate, bit_depth

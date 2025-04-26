@@ -60,49 +60,6 @@ def print_features_v1_wavelet(frequency_bins: np.ndarray, wavelets: np.ndarray, 
         plt.show()
 
 
-def get_top_100(arr: list) -> np.ndarray:
-    """
-    Get the top 100 elements from a numpy array
-    :param arr: 1d list of frequency bins
-    :return: sorted array
-    """
-    return np.sort(arr)[-100:][::-1]
-
-
-def get_100_mean_bins(arr: list) -> np.ndarray:
-    """
-    Split any number of frequency bins into 100 equals subsets and calculate the mean value of each subset
-    :param arr: 1d list of a frequency bins
-    :return: mutated array of mean values of frequencies
-    """
-    m = len(arr)
-    arr = np.array(arr)
-    # map each index in the array to one of 100 groups
-    group_indices = np.floor(np.linspace(0, 100, m, endpoint=False)).astype(int)
-
-    # prepare output arrays
-    result = np.zeros(100)
-    counts = np.bincount(group_indices, minlength=100)
-
-    # sum values into the appropriate group
-    np.add.at(result, group_indices, arr)
-
-    # Divide to get the mean
-    result /= counts
-
-    return result
-
-
-def log_transform(arr, eps: float = 1e-10):
-    """
-    transform an array of values into abs value of log with epsilon for zero values
-    :param arr: 1D array to perform log transformation on
-    :param eps: value to be added to each element in an array to avoid np.log(0)
-    :return: a transformed array
-    """
-    return np.log(np.abs(arr) + eps)
-
-
 def cast_string_array_to_ndarray(df: pd.DataFrame, group_freq_method: str = None, log_transform_flag: bool = False,
                                  group_wavelet_family: bool = False) -> (np.array, np.ndarray):
     """
@@ -113,9 +70,11 @@ def cast_string_array_to_ndarray(df: pd.DataFrame, group_freq_method: str = None
     :param group_wavelet_family: flag to group wavelets by family (e.g. coif12 -> coif)
     :return: tuple of two processed numpy arrays: (frequency bins, wavelets)
     """
+    df = balance_data(df)
+    #df = take_top_3_balanced(df)
     # cast string to array
     x_df = df['frequency_beans'].apply(ast.literal_eval)
-    y_df = df['wavelet'].str.extract(r'^([a-zA-Z]+)')[0] if group_wavelet_family else df['wavelet']
+    y_df = df['wavelet_family'] if group_wavelet_family else df['wavelet']
 
     # drop inconsistent sizes
     df_sizes = x_df.apply(len)
@@ -126,14 +85,30 @@ def cast_string_array_to_ndarray(df: pd.DataFrame, group_freq_method: str = None
     y_df = y_df.drop(inconsistent_indexes).reset_index(drop=True)
 
     if log_transform_flag:
-        x_df = x_df.apply(log_transform)
+        x_df = x_df.apply(mymath.log_transform)
 
     if group_freq_method == "top_100":
-        x_df = x_df.apply(get_top_100)
+        x_df = x_df.apply(mymath.get_top_100_bins)
     elif group_freq_method == "mean_grouped_100":
-        x_df = x_df.apply(get_100_mean_bins)
+        x_df = x_df.apply(mymath.get_100_mean_bins)
 
     return np.stack(x_df), np.stack(y_df)
+
+def take_top_3_balanced(df: pd.DataFrame) -> pd.DataFrame:
+    top3_wavelets = df['wavelet'].value_counts().nlargest(8).index.tolist()
+    df_top3 = df[df['wavelet'].isin(top3_wavelets)]
+    min_count = df_top3['wavelet'].value_counts().min()
+
+    # Step 4: Sample min_count rows from each wavelet
+    balanced_top3 = df_top3.groupby('wavelet').sample(n=min_count, random_state=42).reset_index(drop=True)
+    return balanced_top3
+
+
+def balance_data(df: pd.DataFrame) -> pd.DataFrame:
+    df["wavelet_family"] = df['wavelet'].str.extract(r'^([a-zA-Z]+)')[0]
+    min_size = df['wavelet_family'].value_counts().min()
+    df_balanced = df.groupby('wavelet_family').sample(n=min_size, random_state=42).reset_index(drop=True)
+    return df_balanced
 
 
 def prepare_sub_sets(take_all_files: bool = False, return_whole_df: bool = False,
@@ -154,8 +129,9 @@ def prepare_sub_sets(take_all_files: bool = False, return_whole_df: bool = False
         files = os.listdir(csv_source_files_path)
     else:
         print("Reading preselected files from the directory...")
-        files = ["best_wavelet_v2_badinerie.csv", "best_wavelet_v2_rondo-alla-turca.csv",
-                 "best_wavelet_v2_confutatis.csv", "best_wavelet_v2_sound.csv", "best_wavelet_v2_music.csv"]
+        # files = ["best_wavelet_v2_badinerie.csv", "best_wavelet_v2_rondo-alla-turca.csv",
+        #          "best_wavelet_v2_confutatis.csv", "best_wavelet_v2_sound.csv", "best_wavelet_v2_music.csv"]
+        files = ["best_wavelet_v2_badinerie.csv", "best_wavelet_v2_rondo-alla-turca.csv"]
 
     # read csv files
     for file in files:
@@ -163,9 +139,7 @@ def prepare_sub_sets(take_all_files: bool = False, return_whole_df: bool = False
 
     df_all = pd.concat(csv_source_files, ignore_index=True)
     df_all = df_all.sample(frac=1).reset_index(drop=True)
-    counts = df_all['wavelet'].value_counts()
-    print("Wavelets histogram:")
-    print(counts)
+
     print("Reading data finished.")
 
     print("Start processing data...")
@@ -191,11 +165,10 @@ if return_whole_df:
 else:
     x_train, x_test, y_train, y_test = prepare_sub_sets(take_all_files=False, return_whole_df=return_whole_df)
 
-# my_models.random_forest_classifier(x_train, x_test, y_train, y_test)
-# my_models.knn_classifier(x_train, x_test, y_train, y_test)
-# my_models.xgboost_classifier(x_train, x_test, y_train, y_test)
-# my_models.decision_tree_classifier(x_train, x_test, y_train, y_test)
+my_models.random_forest_classifier(x_train, x_test, y_train, y_test)
+my_models.knn_classifier(x_train, x_test, y_train, y_test)
+my_models.xgboost_classifier(x_train, x_test, y_train, y_test)
+my_models.decision_tree_classifier(x_train, x_test, y_train, y_test)
 model_mlp = my_models.mlp_classifier(x_train, x_test, y_train, y_test)
 
-# SAVE MODEL
-joblib.dump(model_mlp, './../models/best_wavelet/mlp_100_4_200_01.joblib')
+# joblib.dump(model_mlp, './../models/best_wavelet/mlp_100_4_200_01.joblib')

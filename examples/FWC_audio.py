@@ -4,10 +4,10 @@ import sounddevice as sd
 import util.common as common
 
 # PARAMETERS
-DECOMPOSITION_LEVEL = 5
+DECOMPOSITION_LEVEL = 4
 BLOCK_HEIGHT = 3
 RANGE_BLOCKS_LEVEL = DECOMPOSITION_LEVEL - BLOCK_HEIGHT
-WAVELET_FAMILY = 'db26'
+WAVELET_FAMILY = 'sym19'
 file_types = ("sound", "speech", "confutatis", "badinerie", "rondo-alla-turca")
 file_type = file_types[2]
 title_appendix = f"for {file_type} with {WAVELET_FAMILY}"

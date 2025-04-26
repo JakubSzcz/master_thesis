@@ -1,3 +1,4 @@
+import joblib
 import numpy as np
 import pywt
 import time
@@ -20,14 +21,31 @@ class MatchingType(Enum):
 
 
 ### CORE FUNCTIONS ###
+def predict_wavelet(signal: np.ndarray, fs: int) -> str:
+    print("Starting wavelet prediction...")
+    # PARAMETERS
+    model_path = "./../ml/models/best_wavelet/mlp_100_4_200_01.joblib"
+    #based on the empirical results
+    wavelet_dict = {"db": "db34", "coif": "coif16", "sym": "sym19"}
+
+    # performs fft and process output
+    fft_output = mymath.extract_fft(signal, fs)
+    fft_output = mymath.log_transform(fft_output)
+    fft_100_bins = mymath.get_100_mean_bins(fft_output).reshape(1, -1)
+
+    # loading model and prediction
+    model_b_w = joblib.load(model_path)
+    predicted_wavelet_family = model_b_w.predict(fft_100_bins)
+    return wavelet_dict[predicted_wavelet_family[0]]
+
 
 def wavelet_decomposition(signal: np.ndarray, wavelet_family: str, decomposition_level: int,
                           suppress_logs: bool = False) -> list:
     """
-    Performs wavelet decomposition proces on original signal at provided level of decomposition
+    Performs wavelet decomposition proces on original signal at the provided level of decomposition
     :param suppress_logs: stop printing logs
     :param signal: original signal to be decomposed
-    :param wavelet_family: wavelet family used in decomposition process
+    :param wavelet_family: wavelet family used in a decomposition process
     :param decomposition_level: how deep wavelet decomposition should be
     :return: signal decomposed into wavelet coefficients at different levels
     """

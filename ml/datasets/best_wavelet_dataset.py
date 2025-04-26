@@ -1,10 +1,11 @@
 import os
+import functools
 import numpy as np
 import antropy as ant
 import pandas as pd
 import multiprocessing as mp
+from scipy.signal import correlate
 from concurrent.futures import ProcessPoolExecutor
-import functools
 
 import compression.fractal_wavelet_compression_core as fwc
 from util.wavFile import read_wav_file
@@ -20,45 +21,31 @@ def feature_extractor(signal: np.ndarray, metadata: dict) -> dict:
     """
     # time-based
     signal = np.array(signal)
-    mean = np.mean(signal)
-    variance = np.var(signal)
-    std = np.std(signal)
-    skewness = np.mean((signal - mean) ** 3) / (std ** 3 + 1e-8)  # Skewness
-    energy = np.sum(signal ** 2)
+    data = mymath.compute_features(signal)
     spectral_entropy = ant.spectral_entropy(signal, sf=metadata["fs"], method='fft', normalize=True)
 
     features = {
-        "mean": mean,
-        "variance": variance,
-        "std": std,
-        "skewness": skewness,
-        "energy": energy,
+        "mean": data[0],
+        "variance": data[1],
+        "std": data[2],
+        "skewness": data[3],
+        "energy": data[4],
         "spectral_entropy": spectral_entropy
     }
-
     return features
 
 
-def feature_extractor_v2(signal: np.ndarray, metadata: dict) -> dict:
+# TODO cross correlation implemented
+def feature_extractor_v3(signal: np.ndarray, metadata: dict, features: dict) -> dict:
     """
-    Extracts frequency domain from the whole signal frame
+    Extracts statistical data from the whole signal frame
     :param signal: 1d array with signal samples
     :param metadata: signal metadata ("fs")
     :return: dictionary with extracted statistics
     """
-    # time-based
-    fs = metadata["fs"]
 
-    signal = np.array(signal)
 
-    # fft frequency beans
-    fft_output = np.fft.fft(signal)  # symmetric
-    frequency_base = np.fft.fftfreq(len(signal), d=1 / fs)
-
-    idx = frequency_base >= 0
-    fft_output_real = np.abs(fft_output[idx]) * 2 / len(signal)  # normalize magnitude, only positive frequencies
-
-    return {"frequency_beans": fft_output_real.tolist()}
+    return features
 
 
 def split_into_frames(signal: np.ndarray, frame_size: int) -> list:
@@ -75,6 +62,10 @@ def split_into_frames(signal: np.ndarray, frame_size: int) -> list:
         return [signal[i: i + frame_size] for i in range(0, len(signal), frame_size)]
 
 
+# TODO check if cross corelation same as maxpsnr and if model with this is working
+def best_wavelet_cross_correlation():
+    pass
+
 def find_best_wavelet_per_frame(frame: np.ndarray, wavelets: list, dl: int, rbl: int, bh: int, frame_ind: int) -> (
         str, np.float64):
     """
@@ -90,7 +81,6 @@ def find_best_wavelet_per_frame(frame: np.ndarray, wavelets: list, dl: int, rbl:
     # print(f"Finding best wavelet for frame {frame_ind}...")
     max_psnr = -10000
     best_wavelet = None
-
     for wavelet in wavelets:
         wavelet_coefficients = fwc.wavelet_decomposition(frame, wavelet, dl, suppress_logs=True)
         codded_data = fwc.encode_wavelets(wavelet_coefficients, rbl, bh, suppress_logs=True)
@@ -124,9 +114,12 @@ def process_frame(frame: np.ndarray, frame_ind: int, metadata: dict, wavelets: l
         print(f"Frame {frame_ind} skipped (all samples == 0).")
         return None
 
-    features = feature_extractor(frame, metadata)
+    # for statistical features v1
+    #features = feature_extractor(frame, metadata)
 
-    # find best wavelet
+    # for fft bins
+    features = {"frequency_beans": mymath.extract_fft(frame, metadata["fs"]).tolist()}
+    # find the best wavelet
     try:
         progress_indicator = int(0.05 * total_frames)
         if frame_ind % progress_indicator == 0:
@@ -187,7 +180,7 @@ def process_channel(channel: np.ndarray, channel_ind: int, metadata: dict, total
     return results
 
 
-def create_dataset(files: list, folder_path, folder_save_path, wavelets_v2: bool = False):
+def create_dataset(files: list, folder_path, folder_save_path, creation_type: str = "v3"):
     """
     Extract statistical features from all .wav files (per each channel/frame of FRAME_SIZE)
     and calculate the wavelets which yields best PSNR while compressing
@@ -199,7 +192,7 @@ def create_dataset(files: list, folder_path, folder_save_path, wavelets_v2: bool
     FRAME_SIZE = 2 ** 11
     range_blocks_level = decomposition_level - block_height
     wavelets = ['db34', 'db36', 'db35', 'coif17', 'db38', 'db37', 'db32', 'coif16',
-                'db33', 'db27', 'db18', 'db23', 'db31', 'db19', 'coif15', 'sym19']
+                'db33', 'db27', 'db18', 'db23', 'coif19', 'db19', 'coif15', 'sym19']
 
     print(f"FILES: {files}")
     for file in files:
@@ -214,10 +207,14 @@ def create_dataset(files: list, folder_path, folder_save_path, wavelets_v2: bool
 
         # Create and save DataFrame
         if file_results:
-            if wavelets_v2:
+            if creation_type == "v2":
                 df = pd.DataFrame(file_results,
                                   columns=["frequency_beans", "wavelet"])
-            else:
+            elif creation_type == "v1":
+                df = pd.DataFrame(file_results,
+                                  columns=["mean", "variance", "std", "skewness",
+                                           "energy", "psnr", "wavelet", "spectral_entropy"])
+            elif creation_type == "v3":
                 df = pd.DataFrame(file_results,
                                   columns=["mean", "variance", "std", "skewness",
                                            "energy", "psnr", "wavelet", "spectral_entropy"])

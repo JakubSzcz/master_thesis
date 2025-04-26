@@ -142,6 +142,7 @@ def butter_lowpass_filter(data, cutoff, fs, order=4):
     filtered_signal = signal.filtfilt(b, a, data)  # Apply filter with zero-phase
     return filtered_signal
 
+
 def remove_outliers_df(df: pd.DataFrame, column: str) -> pd.DataFrame:
     """
     removes outliers from pandas dataframe using IQR method
@@ -159,3 +160,65 @@ def remove_outliers_df(df: pd.DataFrame, column: str) -> pd.DataFrame:
 
     df_filtered = df_col[(df_col[column] >= lower_bound) & (df_col[column] <= upper_bound)]
     return df_filtered
+
+
+def extract_fft(signal: np.ndarray, fs: int) -> np.ndarray:
+    """
+    Extracts frequency domain from the whole signal frame
+    :param signal: 1d array with signal samples
+    :param fs: sampling frequency of signal
+    :return: dictionary with extracted statistics
+    """
+    signal = np.array(signal)
+
+    # fft frequency beans
+    fft_output = np.fft.fft(signal)  # symmetric
+    frequency_base = np.fft.fftfreq(len(signal), d=1 / fs)
+
+    idx = frequency_base >= 0
+    fft_output_real = np.abs(fft_output[idx]) * 2 / len(signal)  # normalize magnitude, only positive frequencies
+
+    return fft_output_real
+
+
+def log_transform(arr, eps: float = 1e-10):
+    """
+    transform an array of values into abs value of log with epsilon for zero values
+    :param arr: 1D array to perform log transformation on
+    :param eps: value to be added to each element in an array to avoid np.log(0)
+    :return: a transformed array
+    """
+    return np.abs(np.log(np.abs(arr) + eps))
+
+
+def get_100_mean_bins(arr: list | np.ndarray) -> np.ndarray:
+    """
+    Split any number of frequency bins into 100 equals subsets and calculate the mean value of each subset
+    :param arr: 1d list of a frequency bins
+    :return: mutated array of mean values of frequencies
+    """
+    m = len(arr)
+    arr = np.array(arr)
+    # map each index in the array to one of 100 groups
+    group_indices = np.floor(np.linspace(0, 100, m, endpoint=False)).astype(int)
+
+    # prepare output arrays
+    result = np.zeros(100)
+    counts = np.bincount(group_indices, minlength=100)
+
+    # sum values into the appropriate group
+    np.add.at(result, group_indices, arr)
+
+    # divide to get the mean
+    result /= counts
+
+    return np.array(result)
+
+
+def get_top_100_bins(arr: list) -> np.ndarray:
+    """
+    Get the top 100 elements from a numpy array
+    :param arr: 1d list of frequency bins
+    :return: sorted array
+    """
+    return np.sort(arr)[-100:][::-1]

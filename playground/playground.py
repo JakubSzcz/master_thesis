@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pywt
 
 fs = 44100
 t_step = 1/fs
@@ -18,13 +19,15 @@ freq_original = np.fft.fftfreq(len(y), d=1/fs)
 idx = freq_original >= 0
 X_mag = np.abs(fft_original[idx]) * 2 / len(y)   # Normalize magnitude
 freqs_pos = freq_original[idx]
-print(len(y))
-print(len(freqs_pos))
+# print(len(y))
+# print(len(freqs_pos))
+#
+# plt.figure(figsize=(10, 4))
+# plt.plot(freqs_pos, X_mag)
+# plt.title('Magnitude Spectrum')
+# plt.xlabel('Frequency (Hz)')
+# plt.ylabel('Magnitude')
+# plt.grid(True)
+# plt.show()
 
-plt.figure(figsize=(10, 4))
-plt.plot(freqs_pos, X_mag)
-plt.title('Magnitude Spectrum')
-plt.xlabel('Frequency (Hz)')
-plt.ylabel('Magnitude')
-plt.grid(True)
-plt.show()
+print(pywt.wavelist())
