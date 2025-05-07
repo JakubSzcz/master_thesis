@@ -75,9 +75,7 @@ def get_compression_rate(n_samples: int, block_height: int, wavelet_family: str,
     coefficients_to_be_stored = (n_ifs_parameters + filter_len - 1) // 2 * 2
 
     n_ifs_parameters = n_ifs_parameters * 2 if stores_only_alpha else n_ifs_parameters * 3
-    # TODO consider storing floats on 32 bits not 64
-    # assuming float -> 64 bits
-    float_bits_size = 64
+    float_bits_size = 16
     if bit_wise:
         n_samples *= bit_depth * 8
         coefficients_to_be_stored *= float_bits_size

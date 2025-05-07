@@ -147,10 +147,20 @@ def decode(coded: tuple, wavelet_family: str, r_blocks_level: int, block_height:
     if not suppress_logs:
         print("Starting decoding...")
     start_time_dec = time.time()
-    to_be_stored, coded_blocks = coded
+    to_be_stored_full_precision, coded_blocks = coded
     if len(coded_blocks[0]) == 2:
         fit_beta = np.full((coded_blocks.shape[0], 1), 0)
         coded_blocks = np.hstack((coded_blocks, fit_beta))
+
+    to_be_stored = []
+    # simulate 16bits precision
+    for level_org in to_be_stored_full_precision:
+        level_f16 = level_org.astype(np.float16)
+        level_f64_with_loss = level_f16.astype(np.float64)
+        to_be_stored.append(level_f64_with_loss)
+
+    coded_blocks = np.array(coded_blocks, dtype=np.float16)
+    coded_blocks = np.array(coded_blocks, dtype=np.float64)
 
     # get lengths of coeffs on each levels
     n_coeffs_level = []

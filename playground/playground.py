@@ -9,7 +9,6 @@ f1 = 400
 
 t = np.arange(0, 0.01, t_step)
 y = np.sin(2*np.pi*f0*t) + np.sin(2*np.pi*f1*t)
-
 plt.plot(t, y)
 plt.show()
 
