@@ -4,6 +4,7 @@ import numpy as np
 import time
 
 from util.matching import brute_force_r_to_d_matching
+import util.common as common
 
 
 # TODO disable logging parameter
@@ -106,10 +107,11 @@ class IFS:
         print(f"Number of unique d used in the encoding process: {len(d_unique)}/{n_domains}")
         return codded
 
-    def decode(self, encoded_parameters: list) -> list:
+    def decode(self, encoded_parameters: list, printing_flag: bool = False) -> list:
         """
         Decodes from random noise using IFS based on the parameters from the encoding process
          until close to original signal attractor is generated
+        :param printing_flag: plot steps while creating attractor
         :param encoded_parameters: list of tuples of encoded parameters for each range block:
             (domain_starting_sample, alpha, beta)
         :return: attractor as a reconstructed signal close to the original signal
@@ -126,8 +128,10 @@ class IFS:
         # iteratively perform transformation for each range blocks
         # TODO iterations should be done as long as: to many iterations performed or
         #  d_rms between 2 consecutive transformation < D_THRESHOLD
-        for _ in range(self.DEC_ITERATIONS):
+        for i in range(self.DEC_ITERATIONS):
             temp = np.array(decoded).flatten().tolist()
+            if printing_flag:
+                common.print_signal(np.array(decoded).flatten().tolist(), title=f"Iteracja {i} dekodowania")
             for ind, w in enumerate(encoded_parameters):
                 decoded[ind] = mymath.transform(w[1], w[2],
                                                 mymath.downsample(temp[w[0]:w[0] + (self.RANGE_BLOCK_SIZE * 2)]))

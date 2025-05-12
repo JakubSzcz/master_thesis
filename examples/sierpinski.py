@@ -22,27 +22,27 @@ def sierpinski_triangle(iteration, vertices):
         return triangles
 
 
-def plot_sierpinski_triangle(iteration, vertices):
-    triangles = sierpinski_triangle(iteration, vertices)
+def plot_sierpinski_triangle(iteration, vertices, save=False):
 
-    plt.figure(figsize=(6, 6))
-    for triangle in triangles:
-        x = [triangle[0][0], triangle[1][0], triangle[2][0], triangle[0][0]]
-        y = [triangle[0][1], triangle[1][1], triangle[2][1], triangle[0][1]]
-        plt.plot(x, y, 'k-')
+    for i in range(iteration):
+        triangles = sierpinski_triangle(i, vertices)
 
-    plt.title(f'Sierpinski Triangle - Iteration {iteration}')
-    plt.axis('equal')
-    plt.show()
+        plt.figure(figsize=(8, 8))
+        for triangle in triangles:
+            x = [triangle[0][0], triangle[1][0], triangle[2][0], triangle[0][0]]
+            y = [triangle[0][1], triangle[1][1], triangle[2][1], triangle[0][1]]
+            plt.plot(x, y, 'k-', linewidth=2)
+
+        plt.axis('off')
+        plt.tight_layout()
+        if save:
+            plt.savefig(f'sierpinski_{i + 1}.jpg', dpi=300, bbox_inches='tight')
+        plt.show()
+        plt.show()
 
 
 # Define the initial vertices of the triangle
 vertices = ((0, 0), (1, 0), (0.5, np.sqrt(3) / 2))
 
 # Plot the 1st iteration
-plot_sierpinski_triangle(1, vertices)
-
-# Plot the 5th iteration
-plot_sierpinski_triangle(5, vertices)
-
-plot_sierpinski_triangle(8, vertices)
+plot_sierpinski_triangle(4, vertices, save=False)

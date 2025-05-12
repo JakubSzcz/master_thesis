@@ -9,11 +9,11 @@ BLOCK_HEIGHT = 3
 RANGE_BLOCKS_LEVEL = DECOMPOSITION_LEVEL - BLOCK_HEIGHT
 WAVELET_FAMILY = 'db36'
 file_types = ("sound", "speech", "confutatis", "badinerie", "rondo-alla-turca")
-file_type = file_types[3]
+file_type = file_types[-1]
 title_appendix = f"for {file_type} with {WAVELET_FAMILY}"
 STORES_ONLY_ALPHA = False
 
-n_samples = 2 ** 14
+n_samples = 2 ** 17
 # READING ORIGINAL SIGNAL
 original_signal, audio_samplerate, bit_depth = common.read_example_file(n_samples=n_samples, file_type=file_type)
 
