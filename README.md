@@ -39,7 +39,7 @@ The _FWC_ algorithm combines the strengths of both fractal compression and wavel
 
 - FAISS for Block Matching: To address the most time-consuming part of the encoding process (finding the best matching domain block for each range block), the FAISS (Facebook AI Similarity Search) library is utilized. FAISS provides highly efficient algorithms for similarity search in large vector sets, drastically speeding up the block pairing process compared to traditional brute-force methods.
 
-### How to run
+## How to run
 1. Read an uncompressed audio file, extract one channel, and normalize it. Split samples from the channel into smaller frames.
 ```python
 n = 2 ** 12
