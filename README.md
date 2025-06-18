@@ -62,18 +62,19 @@ wavelet_coefficients = fwc.wavelet_decomposition(original_signal, wavelet, DL)
 ```python
 BH = 2
 BL = DL - BH
-codded_data = fwc.encode_wavelets(wavelet_coefficients, BL, BH)
+coded_data = fwc.encode_wavelets(wavelet_coefficients, BL, BH)
 ```
-4. `coded_data` consists of two sets: the _DWT_ coefficients below the _BL_, which are stored directly, and a set of contractive transformation parameters `(d_index, alpha, beta)` for each range block rooted at level _BL_. With that, the compression process is finished.
-5. To decompress the signal, provide `coded_data` and the required metadata in the following way.
+`coded_data` consists of two sets: the _DWT_ coefficients below the _BL_, which are stored directly, and a set of contractive transformation parameters `(d_index, alpha, beta)` for each range block rooted at level _BL_. With that, the compression process is finished.
+
+4. To decompress the signal, provide `coded_data` and the required metadata in the following way.
 ```python
-decoded_signal = fwc.decode(codded_data, wavelet, BL, BH, n)
+decoded_signal = fwc.decode(coded_data, wavelet, BL, BH, n)
 ```
-6. Visualization (optional)
+5. Visualization (optional)
 ```python
 import util.common as common
 
 common.print_attr_vs_orig(decoded_signal, original_signal)
-common.get_compression_rate(n, BH, wavelet, bit_depth=metadata['bd'], bit_wise=True)
+common.get_compression_rate(n, BH, wavelet, bit_depth=metadata['byteDepth'], bit_wise=True)
 ``` 
 An example of how to run FWC compression can be found in the `examples` directory.
