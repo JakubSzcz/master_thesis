@@ -4,12 +4,14 @@ import pywt
 
 import util.math as mymath
 from util.wavFile import read_wav_file
+import compression.fractal_wavelet_compression_core as fwc
 
 
 def print_attr_vs_orig(attractor: list | np.ndarray, original: list | np.ndarray, n_range: int = None,
                        n_domains: int = None, title: str = None, title_appendix: str = None, n_samples: int = None):
     """
     Prints attractor vs original signals at the same plot.
+    :param n_samples: how many samples in both signals
     :param attractor: reconstructed signal/attractor to print
     :param original: original signal to print
     :param n_range: optional number of range blocks (for title purpose)
@@ -22,7 +24,7 @@ def print_attr_vs_orig(attractor: list | np.ndarray, original: list | np.ndarray
     plt.grid()
     if title is None:
         if n_range is None or n_domains is None:
-            title = "Attractor vs Original function"
+            title = "Atraktor vs funkcja oryginalna"
         else:
             title = f"Atraktor vs funkcja oryginalna dla; n_d = {n_domains}, n_r = {n_range}, n_s={n_samples}."
 
@@ -43,6 +45,7 @@ def print_mesures(reconstructed_signal: np.ndarray, original_signal: np.ndarray)
     Prints mesures: L2 norm, Mean Square Error, Peak Signal to Noise Ratio
     :param reconstructed_signal: signal after reconstruction
     :param original_signal: original signal
+    :returns mse and psnr mesures
     """
     mse = mymath.calculate_mse(reconstructed_signal, original_signal)
     euclidian_distance = mymath.distance(np.array(reconstructed_signal), original_signal)
@@ -54,9 +57,10 @@ def print_mesures(reconstructed_signal: np.ndarray, original_signal: np.ndarray)
 
 
 def get_compression_rate(n_samples: int, block_height: int, wavelet_family: str, stores_only_alpha: bool = False,
-                         bit_wise: bool = True, bit_depth: int = 16):
+                         bit_wise: bool = False, bit_depth: int = 16, suppress_logs: bool = True):
     """
-    Prints compression rate
+    Calculates and prints compression rate
+    :param suppress_logs: stop printing logs flag
     :param n_samples: number of samples in original signal
     :param block_height: how many wavelet decomposition levels are to be encoded
     :param wavelet_family: family of wavelets e.g. db10
@@ -65,25 +69,26 @@ def get_compression_rate(n_samples: int, block_height: int, wavelet_family: str,
     :param bit_depth: how many bits per single sample were used in original signal
     :return: calculated compression rate
     """
-
     filter_len = pywt.Wavelet(wavelet_family).dec_len
     n_ifs_parameters = n_samples
-    for i in range(1, block_height + 1):
+    for _ in range(block_height):
         n_ifs_parameters = (n_ifs_parameters + filter_len - 1) // 2
 
-    coefficients_to_be_stored = (n_ifs_parameters + filter_len - 1) // 2 * 2
+    coefficients_to_be_stored = ((n_ifs_parameters + filter_len - 1) // 2) * 2
 
     n_ifs_parameters = n_ifs_parameters * 2 if stores_only_alpha else n_ifs_parameters * 3
     float_bits_size = 16
     if bit_wise:
-        n_samples *= bit_depth * 8
+        n_samples *= bit_depth * 8 # since .wav stores bit_depth in bytes
         coefficients_to_be_stored *= float_bits_size
         n_ifs_parameters *= float_bits_size
     compression_rate = n_samples / (n_ifs_parameters + coefficients_to_be_stored)
     to_print = f"Compression rate = {round(compression_rate, 3)}"
     if bit_wise:
         to_print += " (bit wise)"
-    print(to_print)
+
+    if not suppress_logs:
+        print(to_print)
     return compression_rate
 
 
@@ -116,23 +121,26 @@ def print_signal(signal: list | np.ndarray, title: str, plot_ranges_size: int = 
 def read_example_file(n_samples: int = 2 ** 12, samples_offset: int = 100000, file_type: str = "sound",
                       suppress_logs: bool = True):
     """
-    Shortcut function for reading example audio files.
+    Shortcut function for reading example audio files. Provide a path to your files before usage.
     :param suppress_logs: stop printing logs
     :param n_samples: how many samples to read (default 2 ** 12)
     :param samples_offset: how many samples to skip/shift (default 100000)
     :param file_type: type of audio file to read (default "sound")
-    :return: Samples of single audio channel of audio file
+    :return: Samples and metadata of the single channel from the audio file
     """
+    # WARNING please provided exemplary files
     if file_type == "sound":
-        file = "../resources/sound.wav"
+        #file = "../resources/sound.wav"
+        file = "C:\\magisterka\\master_thesis\\resources\\sound.wav"
     elif file_type == "confutatis":
-        file = "../resources/confutatis.wav"
+        file = "C:\\magisterka\\master_thesis\\resources\\confutatis.wav"
     elif file_type == "rondo-alla-turca":
-        file = "../resources/rondo-alla-turca.wav"
+        file = "C:\\magisterka\\master_thesis\\resources\\rondo-alla-turca.wav"
     elif file_type == "badinerie":
-        file = "../resources/badinerie.wav"
+        file = "C:\\magisterka\\master_thesis\\resources\\badinerie.wav"
     else:
-        file = "../resources/en_speech.wav"
+        #file = "C:\\magisterka\\master_thesis\\resources\\en_speech.wav"
+        file = r"C:\magisterka\master_thesis\resources\testing_data\speech-librivox-0060.wav"
     audio_meta_data, signal = read_wav_file(file)
     audio_samplerate = audio_meta_data["fs"]
     bit_depth = audio_meta_data["byteDepth"]
@@ -144,3 +152,25 @@ def read_example_file(n_samples: int = 2 ** 12, samples_offset: int = 100000, fi
             f"Audio parameters: fs = {audio_samplerate}Hz, samples = {n_samples}, bit depth = {8 * bit_depth}bits/sample, "
             f"duration = {round((1 / audio_samplerate) * n_samples, 2)}s.")
     return signal, audio_samplerate, bit_depth
+
+def testing_warmup():
+    """
+    Performs warmup before tests starts
+    """
+    print("warmup started")
+    for i in range(10, 13):
+        original_signal, _, _ = read_example_file(n_samples=2 ** i, file_type="sound",
+                                                         suppress_logs=True)
+
+        # DWT on signal (wavelet decomposition)
+        wavelet_coefficients = fwc.wavelet_decomposition(original_signal, "db1", 3,
+                                                         suppress_logs=True)
+
+        # ENCODING
+        # codded_data = (to_be_stored, coded_blocks)
+        codded_data = fwc.encode_wavelets(wavelet_coefficients, 1, 2, suppress_logs=True)
+
+        # DECODING
+        fwc.decode(codded_data, "db1", 1, 2, 2 ** i,
+                                    suppress_logs=True)
+    print("warmup finished")

@@ -5,7 +5,6 @@ import numpy as np
 For PCM_S coding
 """
 
-
 def read_wav_file(filename: str, amp_normalized: bool = True) -> (dict, np.ndarray):
     # assertions
     assert filename.endswith('.wav'), "Invalid file extension provided."

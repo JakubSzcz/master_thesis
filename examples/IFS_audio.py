@@ -9,7 +9,7 @@ n_domains = 10  # number of Domain blocks
 range_block_size = 10  # number of Range blocks
 
 # reading audio files
-original_signal, audio_samplerate = common.read_example_file(n_samples=1000)
+original_signal, audio_samplerate, bit_depth = common.read_example_file(n_samples=1000)
 
 ifs = IFS()
 ifs.setup_values(range_block_size, 10, 0.0001)

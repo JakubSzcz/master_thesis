@@ -4,16 +4,16 @@ import numpy as np
 
 def sierpinski_triangle(iteration, vertices):
     if iteration == 0:
-        # Base case: return the vertices of the triangle
+        # base case: return the vertices of the triangle
         return [vertices]
     else:
-        # Recursive case: divide the triangle into 3 smaller triangles
+        # recursive case: divide the triangle into 3 smaller triangles
         v1, v2, v3 = vertices
         mid1 = ((v1[0] + v2[0]) / 2, (v1[1] + v2[1]) / 2)
         mid2 = ((v2[0] + v3[0]) / 2, (v2[1] + v3[1]) / 2)
         mid3 = ((v3[0] + v1[0]) / 2, (v3[1] + v1[1]) / 2)
 
-        # Recursively generate the smaller triangles
+        # recursively generate the smaller triangles
         triangles = []
         triangles.extend(sierpinski_triangle(iteration - 1, (v1, mid1, mid3)))
         triangles.extend(sierpinski_triangle(iteration - 1, (mid1, v2, mid2)))
@@ -41,8 +41,8 @@ def plot_sierpinski_triangle(iteration, vertices, save=False):
         plt.show()
 
 
-# Define the initial vertices of the triangle
+# define the initial vertices of the triangle
 vertices = ((0, 0), (1, 0), (0.5, np.sqrt(3) / 2))
 
-# Plot the 1st iteration
+# plot the 1st iteration
 plot_sierpinski_triangle(4, vertices, save=False)

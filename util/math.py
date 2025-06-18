@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import scipy.signal as signal
+from scipy.interpolate import interp1d
 from numba import njit
 
 
@@ -58,9 +59,8 @@ def transform(alpha, beta, x):
     :param x: vector x on which affine transformation is applied
     :return: transformed vector
     """
-    if beta == 0:
-        return np.multiply(x, alpha)
-    return np.multiply(x, alpha) + np.multiply(beta, np.ones(len(x)))
+    #return np.multiply(x, alpha) + np.multiply(beta, np.ones(len(x)))
+    return np.multiply(x, alpha) + beta
 
 
 @njit(cache=True)
@@ -74,7 +74,7 @@ def compute_features(block: np.ndarray) -> list:
     mean = np.mean(block)
     variance = np.var(block)
     std = np.std(block)
-    skewness = np.mean((block - mean) ** 3) / (std ** 3 + 1e-8)  # Skewness
+    skewness = np.mean((block - mean) ** 3) / ((std ** 3) + 1e-8)  # Skewness
     energy = np.sum(block ** 2)  # Energy of the block
 
     return [mean, variance, std, skewness, energy]
@@ -96,6 +96,12 @@ def calculate_mse(x, y):
 def calculate_rms(x, y):
     return np.sqrt(calculate_mse(x, y))
 
+
+def calculate_mre(x, y):
+    x = np.asarray(x)
+    y = np.asarray(y)
+    mask = x != 0
+    return np.mean(np.abs((x[mask] - y[mask]) / x[mask]))
 
 def calculate_psnr(mse, max_sample_value=1.0):
     if mse == 0:
@@ -126,7 +132,6 @@ def find_highest_frequency(signal_data, fs, threshold_ratio=0.1):
     return max(valid_freqs) if len(valid_freqs) > 0 else 0
 
 
-# Low-pass filter design
 def butter_lowpass_filter(data, cutoff, fs, order=4):
     """
     Filters signal data using lowpass filter
@@ -222,3 +227,12 @@ def get_top_100_bins(arr: list) -> np.ndarray:
     :return: sorted array
     """
     return np.sort(arr)[-100:][::-1]
+
+
+def interpolate_signal(x, new_length, kind='linear'):
+    x = np.asarray(x)
+    old_indices = np.linspace(0, 1, len(x))
+    new_indices = np.linspace(0, 1, new_length)
+
+    interpolator = interp1d(old_indices, x, kind=kind)
+    return interpolator(new_indices)

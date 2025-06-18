@@ -6,9 +6,6 @@ import time
 from util.matching import brute_force_r_to_d_matching
 import util.common as common
 
-
-# TODO disable logging parameter
-# TODO consider no setup_values
 class IFS:
     # parameters default values
     RANGE_BLOCK_SIZE = 10  # size of range block (domain block = *2)

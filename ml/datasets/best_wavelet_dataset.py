@@ -4,7 +4,6 @@ import numpy as np
 import antropy as ant
 import pandas as pd
 import multiprocessing as mp
-from scipy.signal import correlate
 from concurrent.futures import ProcessPoolExecutor
 
 import compression.fractal_wavelet_compression_core as fwc
@@ -35,19 +34,6 @@ def feature_extractor(signal: np.ndarray, metadata: dict) -> dict:
     return features
 
 
-# TODO cross correlation implemented
-def feature_extractor_v3(signal: np.ndarray, metadata: dict, features: dict) -> dict:
-    """
-    Extracts statistical data from the whole signal frame
-    :param signal: 1d array with signal samples
-    :param metadata: signal metadata ("fs")
-    :return: dictionary with extracted statistics
-    """
-
-
-    return features
-
-
 def split_into_frames(signal: np.ndarray, frame_size: int) -> list:
     """
     Splits long signal into frames, pad with zeros, if cannot be split equally
@@ -61,10 +47,6 @@ def split_into_frames(signal: np.ndarray, frame_size: int) -> list:
     else:
         return [signal[i: i + frame_size] for i in range(0, len(signal), frame_size)]
 
-
-# TODO check if cross corelation same as maxpsnr and if model with this is working
-def best_wavelet_cross_correlation():
-    pass
 
 def find_best_wavelet_per_frame(frame: np.ndarray, wavelets: list, dl: int, rbl: int, bh: int, frame_ind: int) -> (
         str, np.float64):
@@ -115,10 +97,11 @@ def process_frame(frame: np.ndarray, frame_ind: int, metadata: dict, wavelets: l
         return None
 
     # for statistical features v1
-    #features = feature_extractor(frame, metadata)
+    # features = feature_extractor(frame, metadata)
 
     # for fft bins
-    features = {"frequency_beans": mymath.extract_fft(frame, metadata["fs"]).tolist()}
+    #features = {"frequency_beans": mymath.get_100_mean_bins(mymath.extract_fft(frame, metadata["fs"])).tolist()}'
+    features = {"samples": frame.tolist()}
     # find the best wavelet
     try:
         progress_indicator = int(0.05 * total_frames)
@@ -126,7 +109,7 @@ def process_frame(frame: np.ndarray, frame_ind: int, metadata: dict, wavelets: l
             print(f"\tFrames processed: {frame_ind} / {total_frames}")
         best_wavelet, max_psnr = find_best_wavelet_per_frame(frame, wavelets, dl, rbl, bh, frame_ind)
         features["wavelet"] = best_wavelet
-        features["psnr"] = max_psnr
+        #features["psnr"] = max_psnr
         return features
     except ValueError:
         print(f"\tFrame {frame_ind} skipped (transformation failed).")
@@ -153,6 +136,7 @@ def process_channel(channel: np.ndarray, channel_ind: int, metadata: dict, total
     """
     print(f"Processing channel {channel_ind + 1}/{total_channels}...")
     channel = np.trim_zeros(channel, "fb")
+    # skip first 5 frames
     frames = split_into_frames(channel, frame_size)
     total_frames = len(frames)
     print(f"Frames in channel: {total_frames}")
@@ -180,19 +164,17 @@ def process_channel(channel: np.ndarray, channel_ind: int, metadata: dict, total
     return results
 
 
-def create_dataset(files: list, folder_path, folder_save_path, creation_type: str = "v3"):
+def create_dataset(files: list, folder_path, folder_save_path, creation_type: str = "v4"):
     """
     Extract statistical features from all .wav files (per each channel/frame of FRAME_SIZE)
     and calculate the wavelets which yields best PSNR while compressing
-    :param wavelets_v2: used trimmed list of wavelet
     :param files: list of .wav files to be processed
     """
     decomposition_level = 3
     block_height = 2
-    FRAME_SIZE = 2 ** 11
+    FRAME_SIZE = 2 ** 10
     range_blocks_level = decomposition_level - block_height
-    wavelets = ['db34', 'db36', 'db35', 'coif17', 'db38', 'db37', 'db32', 'coif16',
-                'db33', 'db27', 'db18', 'db23', 'coif19', 'db19', 'coif15', 'sym19']
+    wavelets = ['db34', 'db19', 'db35', 'coif17', 'db32', 'coif16', 'db18', 'coif8', 'coif15', 'coif12']
 
     print(f"FILES: {files}")
     for file in files:
@@ -209,23 +191,39 @@ def create_dataset(files: list, folder_path, folder_save_path, creation_type: st
         if file_results:
             if creation_type == "v2":
                 df = pd.DataFrame(file_results,
-                                  columns=["frequency_beans", "wavelet"])
+                                  columns=["frequency_beans", "psnr", "wavelet"])
             elif creation_type == "v1":
                 df = pd.DataFrame(file_results,
                                   columns=["mean", "variance", "std", "skewness",
                                            "energy", "psnr", "wavelet", "spectral_entropy"])
             elif creation_type == "v3":
                 df = pd.DataFrame(file_results,
-                                  columns=["mean", "variance", "std", "skewness",
-                                           "energy", "psnr", "wavelet", "spectral_entropy"])
+                                  columns=["cross_correlation", "psnr", "cr_wavelet", "psnr_wavelet"])
+            elif creation_type == "v4":
+                df = pd.DataFrame(file_results, columns=["samples", "wavelet"])
+            #df.to_csv(folder_save_path + f'/best_wavelet_{(file.split(".")[0]).split("/")[1]}.csv', index=False)
             df.to_csv(folder_save_path + f'/best_wavelet_{file.split(".")[0]}.csv', index=False)
             print(f"Results saved for file {file}.")
         else:
             print("No valid frames were processed.")
 
 
+def big_dataset_get_files(folder_prefix):
+    files = []
+    for file_prefix in os.listdir(folder_prefix):
+        sub_folder_path = folder_prefix + file_prefix
+        # only audio
+        for sub_file in os.listdir(sub_folder_path):
+            if sub_file.endswith('.wav'):
+                files.append(file_prefix + "/" + sub_file)
+    print(f"Files to process: {len(files)}")
+    return files
+
+
 if __name__ == "__main__":
-    folder_path = './../../resources/'
-    folder_save_path = 'best_wavelet'
+    folder_path = './../../resources/big_dataset/musan/musan/music/data/'
+    folder_save_path = 'best_wavelet_v4'
     files = [f for f in os.listdir(folder_path)]
-    create_dataset(files, folder_path, folder_save_path, False)
+    # files = ['badinerie.wav', 'confutatis.wav', 'music.wav', 'rondo-alla-turca.wav', 'sound.wav']
+    # files = big_dataset_get_files(folder_path)
+    create_dataset(files, folder_path, folder_save_path)
