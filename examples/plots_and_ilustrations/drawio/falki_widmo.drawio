@@ -1,0 +1,49 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36" version="27.0.5">
+  <diagram name="Strona-1" id="XobyCF4v_tNkZ4sqJLOx">
+    <mxGraphModel dx="1042" dy="623" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="KdiKltzW4NHPvME9i3H8-1" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="40" y="440" as="sourcePoint" />
+            <mxPoint x="40" y="40" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KdiKltzW4NHPvME9i3H8-2" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="40" y="440" as="sourcePoint" />
+            <mxPoint x="760" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KdiKltzW4NHPvME9i3H8-3" value="$$f$$" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="710" y="450" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KdiKltzW4NHPvME9i3H8-4" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=none;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="40" y="160" width="120" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="KdiKltzW4NHPvME9i3H8-5" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=none;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="140" y="160" width="120" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="KdiKltzW4NHPvME9i3H8-6" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=none;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="240" y="280" width="210" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="KdiKltzW4NHPvME9i3H8-7" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=none;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="430" y="360" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="KdiKltzW4NHPvME9i3H8-9" value="$$\phi_0$$" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="70" y="210" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KdiKltzW4NHPvME9i3H8-10" value="$$\psi_0$$" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="170" y="210" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KdiKltzW4NHPvME9i3H8-11" value="$$\psi_1$$" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="315" y="310" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KdiKltzW4NHPvME9i3H8-12" value="$$\psi_2$$" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="550" y="370" width="60" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
