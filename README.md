@@ -42,6 +42,8 @@ The _FWC_ algorithm combines the strengths of both fractal compression and wavel
 ## How to run
 1. Read an uncompressed audio file, extract one channel, and normalize it. Split samples from the channel into smaller frames.
 ```python
+from util.wavFile import read_wav_file
+
 n = 2 ** 12
 offset = 10 ** 5
 metadata, channels = read_wav_file(file_path)
@@ -50,6 +52,8 @@ original_signal = channel[offset:offset + n]
 ```
 2. Choose the desired wavelet and decomposition level, then perform a DWT decomposition on the audio samples.
 ```python
+import compression.fractal_wavelet_compression_core as fwc
+
 wavelet = "db2"
 DL = 3
 wavelet_coefficients = fwc.wavelet_decomposition(original_signal, wavelet, DL)
@@ -65,5 +69,11 @@ codded_data = fwc.encode_wavelets(wavelet_coefficients, BL, BH)
 ```python
 decoded_signal = fwc.decode(codded_data, wavelet, BL, BH, n)
 ```
+6. Visualization (optional)
+```python
+import util.common as common
 
+common.print_attr_vs_orig(decoded_signal, original_signal)
+common.get_compression_rate(n, BH, wavelet, bit_depth=metadata['bd'], bit_wise=True)
+``` 
 An example of how to run FWC compression can be found in the `examples` directory.
