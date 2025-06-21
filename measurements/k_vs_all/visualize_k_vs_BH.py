@@ -17,8 +17,8 @@ Ns = [i for i in range(8, 21, 3)]
 Ls = [4, 44, 74, 104]
 
 plt.figure(figsize=(12, 8))
-plt.suptitle("Zmiana poziomu kompresji k dla różnych wartości parametrów L, N oraz BH",
-             fontsize=16)
+plt.suptitle(r"Zmiana poziomu kompresji $k$ dla różnych wartości parametrów $L$, $N$ oraz $\mathit{BH}$",
+             fontsize=17)
 crs_all = []
 for j, L in enumerate(Ls):
     crs_all = []
@@ -31,13 +31,13 @@ for j, L in enumerate(Ls):
     plt.subplot(2, 2, j + 1)
     max_k = crs_all[-1]
     crs_all = crs_all[:len(crs_all) - 1]
-    plt.title(f"L={L}")
+    plt.title(fr"$L={{{L}}}$", fontsize=13)
 
     for i, crs in enumerate(crs_all):
         plt.plot(BHs, crs, label=fr"$N=2^{{{Ns[i]}}}$")
     plt.plot(BHs, max_k, label="Maksymalny poziom kompresji", linestyle="--", linewidth=2)
-    plt.xlabel("BH")
-    plt.ylabel("k")
+    plt.xlabel(r"$\mathit{BH}$", fontsize=13)
+    plt.ylabel(r"$k$", fontsize=13)
     plt.legend()
     plt.grid(True)
 plt.tight_layout()

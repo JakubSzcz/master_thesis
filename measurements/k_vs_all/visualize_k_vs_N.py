@@ -24,16 +24,17 @@ for BH in BHs:
     crs_all.append(bhs_temp)
 
 plt.figure(figsize=(10, 6))
-plt.suptitle("Zmiana poziomu kompresji k dla różnych wartości\ndługości sygnału N oraz wysokości bloku BH, przy L=64",
-             fontsize=16)
+plt.suptitle(
+    r"Zmiana poziomu kompresji $k$" + " dla różnych wartości\ndługości sygnału " + r"$N$ oraz wysokości bloku $BH$, przy $L=64$",
+    fontsize=16)
 
 for i, BH in enumerate(BHs):
     plt.subplot(2, 2, i + 1)
 
-    plt.title(f"BH={BH}")
+    plt.title(rf"$BH={{{BH}}}$")
     plt.plot(Ns, crs_all[i], label="Poziomu kompresji k")
-    plt.xlabel(r"N=$2^x$")
-    plt.ylabel("k")
+    plt.xlabel(r"N=$2^x$", fontsize=13)
+    plt.ylabel(r"$k$", fontsize=13)
     plt.grid(True)
 plt.tight_layout()
 plt.show()
@@ -49,11 +50,12 @@ for L in Ls:
     crs_all_v2.append(ls_temp)
 
 plt.figure(figsize=(6, 5))
-plt.title("Zmiana poziomu kompresji k dla różnych wartości\ndługości sygnału N oraz długości filtra L, przy BH=5")
+plt.title(
+    r"Zmiana poziomu kompresji $k$" + " dla różnych wartości\ndługości sygnału " + r"$N$ oraz długości filtra $L$, przy $BH=5$")
 for i, L in enumerate(Ls):
-    plt.plot(Ns, crs_all_v2[i], label=f"L={L}")
-plt.xlabel(r"N=$2^x$")
-plt.ylabel("k")
+    plt.plot(Ns, crs_all_v2[i], label=fr"$L={{{L}}}$")
+plt.xlabel(r"N=$2^x$", fontsize=13)
+plt.ylabel(r"$k$", fontsize=13)
 plt.legend()
 plt.grid(True)
 plt.tight_layout()

@@ -17,7 +17,7 @@ custom_labels = ['Muzyka klasyczna', 'Muzyka pop', 'Muzyka pop (ze śpiewem)', '
 wavelets =  ['coif16', 'coif17', 'coif14', 'db37', 'db34', 'coif15', 'db32', 'db38', 'coif13', 'coif12']
 x_ticks = []
 for wavelet in wavelets:
-    x_ticks.append(f"{wavelet}\nL={pywt.Wavelet(wavelet).dec_len}")
+   x_ticks.append(f"{wavelet}\n"+fr"$L={{{pywt.Wavelet(wavelet).dec_len}}}$")
 
 palette = ['#AEC6CF', '#FFB347', '#B39EB5', '#77DD77', '#F49AC2', '#FFD1DC', '#BFD8B8', '#CBAACB', '#FFDAC1',
            '#E0BBE4']

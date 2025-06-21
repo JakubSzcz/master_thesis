@@ -18,19 +18,19 @@ for L, wavelet in unique_pairs_list:
 
     # Create subplots
     fig, axes = plt.subplots(1, 2, figsize=(12, 8))
-    fig.suptitle(f"Mapy cieplne PSNR oraz k dla falki {wavelet} – L={L}", fontsize=16)
+    fig.suptitle(rf"Mapy cieplne $\mathrm{{PSNR}}$ oraz $k$ dla falki {wavelet} – $L={{{L}}}$", fontsize=19)
 
     # PSNR heatmap
     sns.heatmap(subset_psnr, annot=True, fmt=".1f", cmap="YlGnBu", ax=axes[0])
-    axes[0].set_title("PSNR")
-    axes[0].set_xlabel("BH")
-    axes[0].set_ylabel(r"N=($2^n$)")
+    axes[0].set_title(r"$\mathrm{PSNR}$", fontsize=16)
+    axes[0].set_xlabel(r"$\mathit{BH}$", fontsize=13)
+    axes[0].set_ylabel(r"$N=2^n$", fontsize=13)
 
     # k heatmap
     sns.heatmap(subset_k, annot=True, fmt=".1f", cmap="YlGnBu", ax=axes[1])
-    axes[1].set_title("k")
-    axes[1].set_xlabel("BH")
-    axes[1].set_ylabel(r"N ($2^n$)")
+    axes[1].set_title(r"$k$", fontsize=16)
+    axes[1].set_xlabel(r"$\mathit{BH}$", fontsize=13)
+    axes[1].set_ylabel(r"$N=2^n$", fontsize=13)
 
     # Layout
     plt.tight_layout()

@@ -21,42 +21,78 @@ bh_unique = result['bh'].unique()
 n_uniques = result['n'].unique()
 data = [result[result['bh'] == 3], result[result['n'] == 15]]
 
-plt.figure(figsize=(12, 9))
-plt.suptitle(
-    "Porównanie metryk jakości PSNR oraz MRE zrekonstruowanego\nsygnału za pomocą FWC w zależności od wartości parametrów N oraz BH",
-    fontsize=16)
-
 for i, d in enumerate(data):
     parameter_name = ("N", "BH", 3, r"N=$2^x$") if i == 0 else ("BH", "N", 15, "BH")
+    suffix  = fr"${{{parameter_name[1]}}}={{{parameter_name[2]}}}$" if i == 0 else fr"${{{parameter_name[1]}}}=2^{{{parameter_name[2]}}}$"
+    plt.figure(figsize=(8, 6))
+    plt.suptitle(
+        fr"Porównanie metryk $\mathrm{{PSNR}}$ oraz $\mathrm{{MRE}}$" + "\n" + fr"zrekonstruowanego sygnału w zależności od ${{{parameter_name[0]}}}$ oraz dla "+ suffix,
+        fontsize=16)
+
     x = d[parameter_name[0].lower()]
     y_p = d["psnr_mean"]
     y_m = d["mre_mean"]
     y_p_std = d["psnr_std"]
     y_m_std = d["mre_std"]
 
-    plt.subplot(2, 2, (i * 2 + 1))
-    plt.title(
-        f"PSNR dla {parameter_name[1]}={parameter_name[2]}")
-    plt.plot(x, y_p, label="PSNR")
+    plt.subplot(1, 2, 1)
+    plt.title(r"$\mathrm{PSNR}$")
+    plt.plot(x, y_p, label=r"$\mathrm{PSNR}$")
     plt.fill_between(x, y_p - y_p_std, y_p + y_p_std, alpha=0.2)
-    plt.xlabel(parameter_name[3])
-    plt.ylabel("dB")
+    plt.xlabel(parameter_name[3], fontsize=13)
+    plt.ylabel(r"$dB$", fontsize=13)
     plt.xticks(x)
     plt.legend()
     plt.grid(True)
 
-    plt.subplot(2, 2, (i * 2 + 2))
-    plt.title(
-        f"MRE dla {parameter_name[1]}={parameter_name[2]}")
+    plt.subplot(1, 2, 2)
+    plt.title(r"$\mathrm{MRE}$")
     plt.plot(x, y_m, label="MRE", color="orange")
     plt.fill_between(x, y_m - y_m_std, y_m + y_m_std, alpha=0.2, color="orange")
-    plt.xlabel(parameter_name[3])
+    plt.xlabel(parameter_name[3], fontsize=13)
     plt.xticks(x)
     plt.legend()
     plt.grid(True)
 
-plt.tight_layout()
-plt.show()
+    plt.tight_layout()
+    plt.show()
+
+# plt.figure(figsize=(12, 9))
+# plt.suptitle(
+#     r"Porównanie metryk jakości $\mathrm{PSNR}$ oraz $\mathrm{MRE}$ zrekonstruowanego" + "\nsygnału za pomocą FWC w zależności od wartości parametrów " + r"$N$ oraz $BH$",
+#     fontsize=16)
+#
+# for i, d in enumerate(data):
+#     parameter_name = ("N", "BH", 3, r"N=$2^x$") if i == 0 else ("BH", "N", 15, "BH")
+#     x = d[parameter_name[0].lower()]
+#     y_p = d["psnr_mean"]
+#     y_m = d["mre_mean"]
+#     y_p_std = d["psnr_std"]
+#     y_m_std = d["mre_std"]
+#
+#     plt.subplot(2, 2, (i * 2 + 1))
+#     plt.title(
+#         fr"$\mathrm{{PSNR}}$ dla ${{{parameter_name[1]}}}={{{parameter_name[2]}}}$")
+#     plt.plot(x, y_p, label=r"$\mathrm{PSNR}$")
+#     plt.fill_between(x, y_p - y_p_std, y_p + y_p_std, alpha=0.2)
+#     plt.xlabel(parameter_name[3], fontsize=13)
+#     plt.ylabel(r"$dB$", fontsize=13)
+#     plt.xticks(x)
+#     plt.legend()
+#     plt.grid(True)
+#
+#     plt.subplot(2, 2, (i * 2 + 2))
+#     plt.title(
+#         rf"$\mathrm{{MRE}}$ dla ${{{parameter_name[1]}}}={{{parameter_name[2]}}}$")
+#     plt.plot(x, y_m, label="MRE", color="orange")
+#     plt.fill_between(x, y_m - y_m_std, y_m + y_m_std, alpha=0.2, color="orange")
+#     plt.xlabel(parameter_name[3], fontsize=13)
+#     plt.xticks(x)
+#     plt.legend()
+#     plt.grid(True)
+#
+# plt.tight_layout()
+# plt.show()
 
 # summary
 # n vs bh
@@ -73,7 +109,7 @@ result2 = df2.groupby(['n']).agg(
 result2["psnr_delta"] = result2["psnr_max"] - result2["psnr_min"]
 result2["mre_delta"] = result2["mre_max"] - result2["mre_min"]
 
-print(result2)
+# print(result2)
 # # Assume you already have `result` DataFrame from the groupby
 # result['exec_total_time'] = result['exec_time_comp_mean'] + result['exec_time_decomp_mean']
 #
